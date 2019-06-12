@@ -376,8 +376,8 @@ Latcoor3= LatLon2XY.centered(MyMap.wa,-35,124)
 Longcoor1= LatLon2XY.centered(MyMap.wa,-36.7,100)
 Longcoor2= LatLon2XY.centered(MyMap.wa,-36.7,110)
 Longcoor3= LatLon2XY.centered(MyMap.wa,-36.7,120)
-Latvector=c("15ºS","25ºS","35ºS")
-Longvector=c("100ºE","110ºE","120ºE")
+Latvector=c("15ÂºS","25ÂºS","35ÂºS")
+Longvector=c("100ÂºE","110ÂºE","120ÂºE")
 
 
 insetWA <- function()

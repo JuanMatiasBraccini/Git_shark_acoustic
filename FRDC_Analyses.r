@@ -375,8 +375,8 @@ for (i in c(1,3:5))
   if(i%in%c(3,5))axis(side = 1, at =seq(xlm[1],xlm[2],4), labels = seq(xlm[1],xlm[2],4), tcl = .5,las=1,cex.axis=1.2)
   if(i%in%1:3)axis(side = 2, at = seq(ylm[1],ylm[2],4), labels = -seq(ylm[1],ylm[2],4),tcl = .5,las=2,cex.axis=1.2)
 }
-mtext("    Latitude (ºS)",side=2,line=2,las=3,cex=2,outer=T)
-mtext("Longitude (ºE)",side=1,line=2,cex=2,outer=T)
+mtext("    Latitude (ÂºS)",side=2,line=2,las=3,cex=2,outer=T)
+mtext("Longitude (ÂºE)",side=1,line=2,cex=2,outer=T)
 dev.off()
 
 
@@ -970,13 +970,13 @@ if(nrow(TAGS.copper)>0)
 write.csv(Table1,"Table1.data_summary.csv")
 
 #export word table
-Table1=cbind(Variable=c("N° of individuals.tg","Mean FL (SD).tg","Sex ratio (male:female).tg",
-    "N° of individuals.det","Mean FL (SD).det","Sex ratio (male:female).det","Mean (SD).fst.de",
+Table1=cbind(Variable=c("NÂ° of individuals.tg","Mean FL (SD).tg","Sex ratio (male:female).tg",
+    "NÂ° of individuals.det","Mean FL (SD).det","Sex ratio (male:female).det","Mean (SD).fst.de",
     "Max.fst.de","Min.fst.de",  "Mean (SD).monitor","Max.monitor","Min.monitor",                
     "Mean (SD).last.de","Max.last.de","Min.last.de",
-    "Total N° of detections","N° of detections in the Ningaloo array",
-    "N° of detections in the Perth array","N° of detections in the Southern Lines array",
-    "Total N° of receivers detecting individuals"),Table1)
+    "Total NÂ° of detections","NÂ° of detections in the Ningaloo array",
+    "NÂ° of detections in the Perth array","NÂ° of detections in the Southern Lines array",
+    "Total NÂ° of receivers detecting individuals"),Table1)
 if(nrow(TAGS.copper)>0)Scenarios.tbl(WD=getwd(),Tbl=Table1,Doc.nm="Table1.data_summary",caption=NA,paragph=NA,
               HdR.col='black',HdR.bg='white',Hdr.fnt.sze=10,Hdr.bld='normal',body.fnt.sze=10,
               Zebra='NO',Zebra.col='grey60',Grid.col='black',
@@ -1028,8 +1028,8 @@ for(i in 1:length(a.sp))
   if(i%in%c(2:4))  axis(side = 1, at =seq(xlm[1],xlm[2],5), labels = seq(xlm[1],xlm[2],5), tcl = -.5,las=1,cex.axis=1.2)
   if(i%in%c(1:2))  axis(side = 2, at = seq(ylm[1],ylm[2],5), labels = seq(ylm[1],ylm[2],5),tcl = -.5,las=2,cex.axis=1.2)
 }
-mtext("    Latitude (ºS)",side=2,line=2,las=3,cex=2,outer=T)
-mtext("Longitude (ºE)",side=1,line=1,cex=2,outer=T)
+mtext("    Latitude (ÂºS)",side=2,line=2,las=3,cex=2,outer=T)
+mtext("Longitude (ÂºE)",side=1,line=1,cex=2,outer=T)
 dev.off()
 rm(a)
 
@@ -1677,8 +1677,8 @@ fn.plot.track=function(what,ylm,xlm)
     points(ss[,1],ss[,2],pch=19,cex=0.8)
   }
   
-  mtext("    Latitude (ºS)",side=2,line=3.5,las=3,cex=1.8)
-  mtext("Longitude (ºE)",side=1,line=3,cex=1.8)
+  mtext("    Latitude (ÂºS)",side=2,line=3.5,las=3,cex=1.8)
+  mtext("Longitude (ÂºE)",side=1,line=3,cex=1.8)
   legend("center",paste(unique(d$Species)," shark"," (tag: ", what,")",sep=""),bty='n',cex=1.5)
   
 }
@@ -3650,8 +3650,8 @@ fn.see=function(x,y,XLIM,YLIM)
       arrows(y$LONG.REL,y$LAT.REL,y$LONG.REC,y$LAT.REC,col=CoLs[Julian],lwd=2,length=0.1,angle=20)
       text(117,-24.5,"Days from release",cex=1.25)
       color.legend(117,-25,118,-30,round(seq(1,max(Julian),length.out=5)),CoLs,gradient="y")
-      mtext("    Latitude (ºS)",side=2,line=2,las=3,cex=2)
-      mtext("Longitude (ºE)",side=1,line=1.5,cex=2)
+      mtext("    Latitude (ÂºS)",side=2,line=2,las=3,cex=2)
+      mtext("Longitude (ÂºE)",side=1,line=1.5,cex=2)
       points(y$ReleaseLongitude,y$ReleaseLatitude,pch=4,cex=1.25,col="chartreuse4",lwd=3)
     }
       
@@ -4474,8 +4474,8 @@ if(do.map=="YES")
       polygon(x=N.WA.long,y=N.WA.lat,lwd=2)
       polygon(x=S.WA.long,y=S.WA.lat,lwd=2)
       text(133,-25,("Australia"),col="black", cex=2)
-      mtext("Latitude (ºS)",side=2,line=0,las=3,cex=2)
-      mtext("Longitude (ºE)",side=1,line=0,cex=2)
+      mtext("Latitude (ÂºS)",side=2,line=0,las=3,cex=2)
+      mtext("Longitude (ÂºE)",side=1,line=0,cex=2)
       text(115.98,-22.6,("A"),col="black", cex=1.75)
       text(120.6,-30,("B"),col="black", cex=1.75)
       
@@ -5153,8 +5153,8 @@ if(do.map=="YES")
     axis(side = 1, at =LONGSEQ, labels = LONGSEQ, tcl = .5,las=1,cex.axis=1.5,padj=-.5)
     axis(side = 2, at = LATSEQ, labels = -LATSEQ,tcl = .5,las=2,cex.axis=1.5,hadj=.75)
     box(lwd=2)
-    mtext("Latitude (ºS)",side=4,line=1,las=3,cex=1.5)
-    mtext("Longitude (ºE)",side=1,line=2.5,cex=1.5)
+    mtext("Latitude (ÂºS)",side=4,line=1,las=3,cex=1.5)
+    mtext("Longitude (ÂºE)",side=1,line=2.5,cex=1.5)
     contour(xbat, ybat, reshaped[,2:ncol(reshaped)],ylim=YLIM,xlim=XLIM, zlim=c(-1,-200),
             nlevels = 4,labcex=1.,lty = 1,col=c(COLOR,COLOR,COLOR,COLOR,"transparent"),add=T)
     text(Xtext,Ytext,TEXT,cex=TEXT.cx)
@@ -5665,7 +5665,7 @@ symbols(N.week.one$week,rep(at[1],nrow(N.week.one)),
 symbols(N.week.one$week,rep(at[2],nrow(N.week.one)),
         rectangles=matrix(c(rep(.75,nrow(N.week.one)),N.week$S),byrow=F,ncol=2),add=T,fg="blue",bg="deepskyblue3")
 axis(2,at,c("North","South"),las=2,cex.axis=1.75)
-axis(2,at-.0125,c("(22-23° S)","(32-35° S)"),las=2,cex.axis=1,col='transparent')
+axis(2,at-.0125,c("(22-23Â° S)","(32-35Â° S)"),las=2,cex.axis=1,col='transparent')
 axis(1,WEE,F,las=2,tcl = -0.25)
 axis(1,AT,AT,tcl = -0.5,cex.axis=1.75)
 axis(1,AT,paste("(",SEaSon,")",sep=""),tcl = -0.5,cex.axis=1.5,line=1,col="transparent")
@@ -5695,7 +5695,7 @@ lines(Mean.temp.N$Temperature,lwd=2,col=2,lty=2)
 
 att=seq(floor(Rng[1]),ceiling(Rng[2]),by=1)
 axis(4,att,att,las=1,line=n+2,cex.axis=1.25)
-mtext("Average temperature (°C)",4,line=n+4,cex=1.5)
+mtext("Average temperature (Â°C)",4,line=n+4,cex=1.5)
 
 dev.off()
 
@@ -5776,8 +5776,8 @@ if(do.map=="NO" & Do.map.natal.mig=="YES")
     axis(side = 1, at =LONGSEQ, labels = LONGSEQ, tcl = .5,las=1,cex.axis=1.5,padj=-.5)
     axis(side = 4, at = LATSEQ, labels = -LATSEQ,tcl = .5,las=2,cex.axis=1.5,hadj=.25)
     box(lwd=1.5)
-    mtext("Latitude (ºS)",side=4,line=2.25,las=3,cex=1.75)
-    mtext("Longitude (ºE)",side=1,line=2,cex=1.75)
+    mtext("Latitude (ÂºS)",side=4,line=2.25,las=3,cex=1.75)
+    mtext("Longitude (ÂºE)",side=1,line=2,cex=1.75)
     
     #North and south polygons
     polygon(x=c(113.25,114.25,114.25,113.25),y=c(-23.25,-23.25,-21.75,-21.75),
@@ -5817,7 +5817,7 @@ if(do.map=="NO" & Do.map.natal.mig=="YES")
   # fn.week.axs()
   # 
   # #Add temperature
-  # fn.T.day.len(Mean.temp.S$Temperature,Mean.temp.N$Temperature,"Temperature (°C)",2,2.5)
+  # fn.T.day.len(Mean.temp.S$Temperature,Mean.temp.N$Temperature,"Temperature (Â°C)",2,2.5)
   # axis(1,Mean.temp.S$Month,F,las=2,tcl = -0.25)
   # axis(1,c(1,3,6,9,12),c("Jan","Mar","Jun","Sep","Dec"),tcl = -0.75,cex.axis=1.5)
   # mtext("Month",1,outer=F,cex=1.5,line=2)
@@ -5912,7 +5912,7 @@ if(Show.dy.ln=="YES")
     lines(aaa$Month,aaa$Temperature,lwd=1,col=2,lty=LTYPE[i])
     
   }
-  mtext("Average temperature (°C)",2,line=2.75,cex=1.75,las=3)
+  mtext("Average temperature (Â°C)",2,line=2.75,cex=1.75,las=3)
   axis(1,c(1,3,6,9,12),c("Jan","Mar","Jun","Sep","Dec"),tcl = -0.75,cex.axis=1.5)
   mtext("Month",1,outer=F,cex=1.75,line=2)
   dev.off()
@@ -6474,9 +6474,9 @@ LATSEQ=seq(ceiling(YY[1]),ceiling(YY[2]),by=1)
 LATSEQ2=seq(ceiling(YY[1]),ceiling(YY[2]),by=2)
 fn.plt.mp(XX,YY,"NO",'YES')
 points(STATIONS$longitude,STATIONS$latitude,col=1,pch=20,cex=1.25)
-axis(side = 1, at =LONGSEQ, labels = paste(LONGSEQ,"ºE",sep=""), tcl = .5,las=1,cex.axis=1.5,padj=-.5)
+axis(side = 1, at =LONGSEQ, labels = paste(LONGSEQ,"ÂºE",sep=""), tcl = .5,las=1,cex.axis=1.5,padj=-.5)
 axis(side = 4, at = LATSEQ, labels =F,tcl = .5,las=2,cex.axis=1.5,hadj=.15)
-axis(side = 4, at = LATSEQ2, labels =paste(-LATSEQ2,"ºS",sep=""),tcl = .5,las=2,cex.axis=1.5,hadj=.15)
+axis(side = 4, at = LATSEQ2, labels =paste(-LATSEQ2,"ÂºS",sep=""),tcl = .5,las=2,cex.axis=1.5,hadj=.15)
 box(lwd=1.5)
 fn.scale.bar(c(116,-25.5),c(117,-25.5),1.004,.9875,1.005,1.01)
 legend(115.5,-28,c("Receiver","Releases"),pch=c(19,4),col=c("black","grey15"),cex=1.25,bty='n')
@@ -7481,8 +7481,8 @@ fn.main.map=function(XLIM,YLIM,LONGSEQ,LATSEQ,Xtext,Ytext,TEXT,TEXT.cx)
   axis(side = 1, at =LONGSEQ, labels = LONGSEQ, tcl = .5,las=1,cex.axis=1.5,padj=-.5)
   axis(side = 2, at = LATSEQ, labels = -LATSEQ,tcl = .5,las=2,cex.axis=1.5,hadj=.75)
   box(lwd=2)
-  mtext("Latitude (ºS)",side=4,line=1,las=3,cex=1.5)
-  mtext("Longitude (ºE)",side=1,line=1.85,cex=1.5)
+  mtext("Latitude (ÂºS)",side=4,line=1,las=3,cex=1.5)
+  mtext("Longitude (ÂºE)",side=1,line=1.85,cex=1.5)
   contour(xbat, ybat, reshaped[,2:ncol(reshaped)],ylim=YLIM,xlim=XLIM, zlim=c(-1,-200),
           nlevels = 4,labcex=1.,lty = 1,col=c(COLOR,COLOR,COLOR,COLOR,"transparent"),add=T)
   text(Xtext,Ytext,TEXT,cex=TEXT.cx)
@@ -7947,8 +7947,8 @@ fun.plot.mig=function(DATA,tags,LONG,LAT)
   axis(side = 1, at =seq(LONG[1],LONG[2]), labels = seq(LONG[1],LONG[2]), tcl = .5,las=1,cex.axis=1.5,padj=-.5)
   axis(side = 2, at = seq(round(LAT[1]),LAT[2]-1), labels = -(seq(round(LAT[1]),LAT[2]-1)),tcl = .5,las=2,cex.axis=1.5,hadj=.75)
   box(lwd=2)
-  mtext("Latitude (ºS)",side=2,line=2.5,las=3,cex=1.5)
-  mtext("Longitude (ºE)",side=1,line=1.55,cex=1.5)
+  mtext("Latitude (ÂºS)",side=2,line=2.5,las=3,cex=1.5)
+  mtext("Longitude (ÂºE)",side=1,line=1.55,cex=1.5)
   contour(xbat, ybat, reshaped[,2:ncol(reshaped)],ylim=LONG,xlim=LAT, zlim=c(-1,-200),
           nlevels = 4,labcex=1.,lty = 1,col=c(COLOR,COLOR,COLOR,COLOR,"transparent"),add=T)
   
@@ -8613,8 +8613,8 @@ MEPS.paper=function(do.MEPS.outptus)
         polygon(x=N.WA.long,y=N.WA.lat,lwd=2)
         polygon(x=S.WA.long,y=S.WA.lat,lwd=2)
         text(133,-25,("Australia"),col="black", cex=2)
-        mtext("Latitude (ºS)",side=2,line=0,las=3,cex=1.5)
-        mtext("Longitude (ºE)",side=1,line=0,cex=1.5)
+        mtext("Latitude (ÂºS)",side=2,line=0,las=3,cex=1.5)
+        mtext("Longitude (ÂºE)",side=1,line=0,cex=1.5)
         text(115.98,-22.6,("A"),col="black", cex=1.75)
         text(119,-33,("B"),col="black", cex=1.75)
         
@@ -9117,7 +9117,7 @@ MEPS.paper=function(do.MEPS.outptus)
     par(mfcol=c(5,1),mar=c(2,3.75,.1,.1),oma=c(.7,2,1,0.1),mgp=c(2, 0.75, 0),las=1)
     for(z in 1:length(Res.zones))  fn.plt.glm2(MOD=Residency.model[[z]]$GLM,DAT=Residency.model[[z]]$DATA,
                                                What=c("Species"),Predictors=PREDS.res,PLOT="bars")
-    mtext("Residency (±SE)",2,0,cex=1.5,las=3,outer=T)
+    mtext("Residency (Â±SE)",2,0,cex=1.5,las=3,outer=T)
     dev.off()
     
 
@@ -9192,7 +9192,7 @@ MEPS.paper=function(do.MEPS.outptus)
     par(mfcol=c(1,1),mar=c(2,0,.1,.1),oma=c(.7,4,1,0.1),mgp=c(2, 0.75, 0),las=1)
     fn.plt.glm(MOD=Roaming.model$GLM,DAT=Roaming.model$DATA,What="Species",Predictors=PREDS,
                Axis.Labl=c("Dusky","Sandbar","Gummy","Whiskery"),PLOT="bars")
-    mtext("Roaming (±SE)",2,2.7,cex=1.75,las=3,outer=T)
+    mtext("Roaming (Â±SE)",2,2.7,cex=1.75,las=3,outer=T)
     dev.off()
     
   }
@@ -9278,8 +9278,8 @@ FO.paper=function(do.FO.outputs)
         polygon(x=N.WA.long,y=N.WA.lat,lwd=2)
         polygon(x=S.WA.long,y=S.WA.lat,lwd=2)
         text(133,-25,("Australia"),col="black", cex=2)
-        mtext("Latitude (ºS)",side=2,line=0,las=3,cex=1.5)
-        mtext("Longitude (ºE)",side=1,line=0,cex=1.5)
+        mtext("Latitude (ÂºS)",side=2,line=0,las=3,cex=1.5)
+        mtext("Longitude (ÂºE)",side=1,line=0,cex=1.5)
         text(115.98,-22.6,("A"),col="black", cex=1.75)
         text(119,-33,("B"),col="black", cex=1.75)
         
@@ -10179,8 +10179,8 @@ FO.paper(do.FO.outputs="NO")
 # #text(115.79,-31.97,("Perth"),col="black", cex=1.15)
 # #text(115.51,-31.97, ("Rottnest Is."),col="black", cex=1.15)
 # #legend(115.3,-32.3,c("VR2","VR4"),pch=c(19,17),bty="n",col=c("black","gray42"),text.col="black",cex=1.1)
-# #mtext("Latitude (ºS)",side=2,outer=T,line=-2.5,font=1,las=0,cex=1)
-# #mtext("Longitude (ºE)",side=1,outer=T,line=-2.5,font=1,las=1,cex=1)
+# #mtext("Latitude (ÂºS)",side=2,outer=T,line=-2.5,font=1,las=0,cex=1)
+# #mtext("Longitude (ÂºE)",side=1,outer=T,line=-2.5,font=1,las=1,cex=1)
 # #vp <- baseViewports()
 # #pushViewport(vp$inner,vp$figure,vp$plot)
 # #pushViewport(viewport(x=0.1,y=0.99,width=.30,height=.30,just=c("left","top")))
@@ -10755,8 +10755,8 @@ FO.paper(do.FO.outputs="NO")
 #   axis(side = 1, at =seq(LONG[1],LONG[2]), labels = seq(LONG[1],LONG[2]), tcl = .5,las=1,cex.axis=1.5,padj=-.5)
 #   axis(side = 2, at = seq(round(LAT[1]),LAT[2]-1), labels = -(seq(round(LAT[1]),LAT[2]-1)),tcl = .5,las=2,cex.axis=1.5,hadj=.75)
 #   box(lwd=2)
-#   mtext("Latitude (ºS)",side=2,line=2.5,las=3,cex=1.5)
-#   mtext("Longitude (ºE)",side=1,line=1.55,cex=1.5)
+#   mtext("Latitude (ÂºS)",side=2,line=2.5,las=3,cex=1.5)
+#   mtext("Longitude (ÂºE)",side=1,line=1.55,cex=1.5)
 #   contour(xbat, ybat, reshaped[,2:ncol(reshaped)],ylim=LONG,xlim=LAT, zlim=c(-1,-200),
 #           nlevels = 4,labcex=1.,lty = 1,col=c(COLOR,COLOR,COLOR,COLOR,"transparent"),add=T)
 #   

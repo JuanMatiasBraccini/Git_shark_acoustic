@@ -25,7 +25,7 @@ library(geosphere)
 
 
 #1. Data Section---------------------------------------------------------
-setwd('C:\\Users\\myb\\Desktop\\new\\Charlie H')
+setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie')
 Dat=read.csv('Data/All detections_2018 01.csv',stringsAsFactors = F)
 SA.receivers=read.csv('Data/GSV receiver location.csv',stringsAsFactors = F)
 Blank_LatLong=read.csv('Data/Blank_LatLong.csv',stringsAsFactors = F)
@@ -173,10 +173,10 @@ Dat$Distance.c=ifelse(Dat$zone.prev=='SA.east' & Dat$zone=='Zone2',
 Dat$Distance=with(Dat,ifelse(TagCode==TagCode.prev,Distance/1000,NA)) 
 Dat$Distance.c=with(Dat,ifelse(TagCode==TagCode.prev,Distance.c/1000,NA)) 
 
-
+#MISSING: some ROM are to high, very receivers and short time!!!!
 #3.5 cross jurisdictional displacements and rates of movements (km per day)
 Dat= Dat%>% 
-  mutate(ROM=Distance.c/(Time/(60*24)),
+  mutate(ROM=ifelse(Time>0,Distance.c/(Time/(60*24)),NA),
          Juris=ifelse(zone%in%c("WC","Zone1","Zone2"),"WA",
                ifelse(zone%in%c("SA.east","SA.west"),"SA",NA)),
          Juris.prev=ifelse(zone.prev%in%c("WC","Zone1","Zone2"),"WA",
@@ -262,7 +262,17 @@ Tab1= group_by(Dat, TagCode, Species,Organisation,State) %>%
       as.data.frame()
 write.csv(Tab1,'Tab.tag.code_species_org_state.csv',row.names = F)
 
-#4.2 proportion of time per jurisdiction
+#4.2 distribution of distance and ROM
+dist.fn=function(var)
+{
+  d=Dat[,match(var,names(Dat))]
+  d=d[d>0]
+  d=d[!is.na(d)]
+  plot(density(d,adjust=2), main="")
+}
+dist.fn(var="Distance.c")
+dist.fn(var="ROM")
+#4.3 proportion of time per jurisdiction
 fn.plt.prop.time=function(d,CL1,CL2)
 {
   plot(1:length(d),xlim=c(0,1),ylim=c(0,length(d)),col="transparent",ylab="",

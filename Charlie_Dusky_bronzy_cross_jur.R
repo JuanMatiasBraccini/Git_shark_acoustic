@@ -1,22 +1,17 @@
 #--SCRIPT FOR ANALYSING CROSS-JURISDICTIONAL MOVEMENTS OF DUSKY & BRONZE WHALERS--
 
-#note: must report the total number of WA and SA tags to put those that 
+#note: must report the total number of WA and SA tags and detected to put those that 
 #      move across in perspective...
 
-#to do for individuals that crossed jurisdictions:
-   # Straight line distances between acoustic arrays (indicate travel distance)
-   # Connectivity plots (The connectivity plot represented the frequency 
-   #     and magnitude of daily shark movements, and therefore provided information
-   #     about the incoming and outgoing movements of duskies and bronzies along  
-   #     the southern coast of Australia
-   #     use "circus.trackPlotRgiong()" from 'circlize' package)...this needs the total number of tagged sharks
-   # Proportion of time per jurisdiction (WA-SA-WA-SA, etc)
-   
-  # seasonal patterns: time line with X axis (julian day) and Y axis showing distance
-  #                    from Adelaide for each shark...(by species)
+#to do:
+    # map release location and trajectories (showing where detected)
+    # seasonal patterns: time line with X axis (julian day) and Y axis showing distance
+    #                    from release location for each shark...(by species)
 
-   #Should also consider conventional tags of duskies that move to SA 
-#           (any bronzies?)
+
+   # Connectivity plots circus.trackPlotRgiong()" from 'circlize' package)??
+  #         ...but this needs the total number of tagged sharks
+
 
 
 
@@ -42,6 +37,9 @@ DATA.SMN=do.call(rbind,lapply(file_list,read.csv))
 
 setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie')
 
+
+#bring in conventional tagging data
+source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Source_conventional_data.R")
 
 
 #2. Parameters Section---------------------------------------------------
@@ -345,6 +343,27 @@ for(i in 1:length(TAG))
 #3.7 seasonal patterns??
 #plot distance from release thru time
 
+
+#3.8 conventional tagging
+Conv.Tagging=Tagging%>%
+  filter(Species%in%c("BW","CP") & !is.na(Lat.rels))%>%
+  mutate(Recaptured=ifelse(!is.na(Yr.rec)|!is.na(Lat.rec)|!is.na(Long.rec),"Yes","No"),
+         Rel.juris=ifelse(Long.rels>129,"SA","WA"),
+         Rec.juris=ifelse( Recaptured=="Yes"& Long.rec>129,"SA","WA"),
+         Col.sp=ifelse(Species=="BW",2,3),
+         Same.Juris=ifelse(Recaptured=="Yes"& Rel.juris==Rec.juris,"Yes",
+                    ifelse(Recaptured=="Yes"& !Rel.juris==Rec.juris,"No",NA)))
+TAB.conv.rel.rec=Conv.Tagging%>%
+  group_by(Rel.juris,Rec.juris,COMMON_NAME,Recaptured)%>%
+  summarise(n=n())%>%
+  filter(!is.na(Rec.juris))%>%
+  arrange(COMMON_NAME,Rel.juris,Recaptured)%>%
+  data.frame%>%
+  mutate(Rec.juris=ifelse(Recaptured=="No","N/A",Rec.juris))
+
+
+
+
 #4. Report Section-------------------------------------------------------
 setwd(paste(getwd(),"Results",sep="/"))
 
@@ -398,3 +417,25 @@ for(t in 1:length(TAG.species))
   mtext(names(TAG.species)[t],3,cex=1.5)
 }
 dev.off()
+
+
+#4.3
+
+
+#4.4 Export conventional tagging
+write.csv(TAB.conv.rel.rec,"Summary.conv.tag.csv",row.names = F)
+
+with(subset(Conv.Tagging,Recaptured=="Yes" & Same.Juris=="No"),{
+  plot(1,1,ylim=c(-36,-30),xlim=c(113,140),ylab="",xlab="")
+  arrows(Long.rels,Lat.rels,Long.rec,Lat.rec,col=Col.sp)
+})
+Siz.sex.cross.conv=Conv.Tagging%>%
+        filter(Recaptured=="Yes" & Same.Juris=="No")%>%
+        mutate(Date.rel=as.POSIXct(paste(Yr.rel,Mn.rel,Day.rel,sep="-")),
+                 Date.rec=as.POSIXct(paste(Yr.rec,Mn.rec,Day.rec,sep="-")),
+                 time.at.liberty=Date.rec-Date.rel)%>%
+  select(Species,COMMON_NAME,Lat.rels,Long.rels,Lat.rec,Long.rec,
+         Rel.juris,Rec.juris,Rel_FL,Sex,Date.rel,
+         Date.rec,time.at.liberty)%>%
+  arrange(Species,Date.rel,Sex)
+write.csv(Siz.sex.cross.conv,"Summary.conv.tag_time.liberty.csv",row.names = F)

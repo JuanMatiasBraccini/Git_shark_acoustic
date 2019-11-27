@@ -11,24 +11,38 @@
    #     the southern coast of Australia
    #     use "circus.trackPlotRgiong()" from 'circlize' package)...this needs the total number of tagged sharks
    # Proportion of time per jurisdiction (WA-SA-WA-SA, etc)
-   # Quantification of cross jurisdictional displacements and rates of movements
-   # Any seasonal patterns??
+   
+  # seasonal patterns: time line with X axis (julian day) and Y axis showing distance
+  #                    from Adelaide for each shark...(by species)
 
-   #Should also consider conventional tags of duskies that move to SA (any bronzies?)
+   #Should also consider conventional tags of duskies that move to SA 
+#           (any bronzies?)
 
-#Clarify with Charlie: for each of these sharks, detections are the total number
+
 
 rm(list=ls(all=TRUE))
 library(lubridate)
-library(dplyr)
+library(tidyverse)
 library(geosphere)
+library(chron) 
 
+options(stringsAsFactors = FALSE)
 
 #1. Data Section---------------------------------------------------------
+setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie\\Data')
+Dat=read.csv('All detections_2018 01.csv')
+SA.receivers=read.csv('GSV receiver location.csv')
+Blank_LatLong=read.csv('Blank_LatLong.csv')
+
+#SMN individual tag download Nov 2019
+setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie\\Data\\SMN_download_Nov_19')
+
+file_list  <- list.files()
+DATA.SMN=do.call(rbind,lapply(file_list,read.csv))
+
 setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie')
-Dat=read.csv('Data/All detections_2018 01.csv',stringsAsFactors = F)
-SA.receivers=read.csv('Data/GSV receiver location.csv',stringsAsFactors = F)
-Blank_LatLong=read.csv('Data/Blank_LatLong.csv',stringsAsFactors = F)
+
+
 
 #2. Parameters Section---------------------------------------------------
 
@@ -47,39 +61,112 @@ Mid.point_Cape.Leuwin=distGeo(Mid.point,Cape.Leuwin)
 #3. Procedure Section----------------------------------------------------
 
 #3.1 initial data manipulation
+
+#SMN
+DATA.SMN$Datetime=as.POSIXlt(DATA.SMN$ï..Datetime,format="%d-%B-%Y %H:%M",tz="UTC")
+DATA.SMN$Date.local=date(DATA.SMN$Datetime)
+DATA.SMN$Time.local=times(format(DATA.SMN$Datetime, "%H:%M:%S"))
+DATA.SMN$ReleaseDate=as.POSIXlt(DATA.SMN$ReleaseDate,format="%d-%B-%Y",tz="UTC")
+  
+
+#Charlie's file  
 Dat_no.name=subset(Dat,StationName=="") %>% select(-StationName)
 Dat_no.name=left_join(Dat_no.name,Blank_LatLong,by="ReceiverSerialNumber")
 Dat=subset(Dat,!StationName=="") %>% select(names(Dat_no.name))
 Dat=rbind(Dat,Dat_no.name)
 Dat = left_join(Dat,SA.receivers,by=c("StationName" = "Location.name")) %>%
       mutate(Datetime=as.POSIXct(Datetime..WST.,format="%d/%m/%Y %H:%M",tz="UTC"),
-              Mn=month(Datetime),
+             Longitude=ifelse(is.na(Longitude.x),Longitude.y,Longitude.x),
+             Latitude=ifelse(is.na(Latitude.x),Latitude.y,Latitude.x),
+             Latitude=-abs(Latitude))
+             
+#Combine Charlie's file and SMN
+  #remove duplicates
+Dat$Unico=with(Dat,paste(TagCode,Latitude,Longitude,Datetime))
+DATA.SMN$ReleaseLatitude=-abs(DATA.SMN$ReleaseLatitude)
+DATA.SMN$Latitude=-abs(DATA.SMN$Latitude)
+DATA.SMN$Unico=with(DATA.SMN,paste(TagCode,Latitude,Longitude,Datetime))
+duplis=which(DATA.SMN$Unico%in%Dat$Unico)
+if(length(duplis)>0)DATA.SMN=DATA.SMN[-duplis,]
+dummy=Dat[1:nrow(DATA.SMN),]
+dummy[,]=NA             
+
+dummy=dummy%>%mutate(
+  TagCode=DATA.SMN$TagCode,
+  Organisation=ifelse(DATA.SMN$ReleaseLongitude>129,'Flinders/SARDI','WA Fisheries'),      
+  State=ifelse(DATA.SMN$Longitude>129,'SA','WA'),
+  Species=DATA.SMN$Species, 
+  Longitude=DATA.SMN$Longitude,
+  Latitude=DATA.SMN$Latitude,
+  Datetime=as.POSIXct(DATA.SMN$Datetime),
+  Unico=DATA.SMN$Unico)
+
+Dat=rbind(Dat,dummy) 
+
+#Add release date and location as first location
+DATA.SMN$ReleaseDate=paste(DATA.SMN$ReleaseDate,"00:01")
+Rel.dat=DATA.SMN%>%
+              distinct(TagCode,.keep_all = TRUE)%>%
+              select(TagCode,ReleaseDate,ReleaseLatitude,ReleaseLongitude)%>%
+              mutate(ReleaseState=ifelse(ReleaseLongitude>129,'SA','WA'))
+                   
+#dummy, replaces by Charlie's release data                          ACA also need rel length!!
+Rel.Charlie=data.frame(TagCode=c(30992, 23303, 33194, 26438),
+                       ReleaseDate=Rel.dat$ReleaseDate[1],
+                    ReleaseLatitude=-34.51000,
+                    ReleaseLongitude=138.0700) %>%
+                    mutate(ReleaseState=ifelse(ReleaseLongitude>129,'SA','WA'))
+Rel.dat=rbind(Rel.dat,Rel.Charlie)%>%
+  mutate(Relzone=ifelse(ReleaseLatitude>(-33) & ReleaseLatitude<=(-26) & ReleaseLongitude<116.5,"WC",
+              ifelse(ReleaseLatitude<=(-33) & ReleaseLongitude<116.5,"Zone1",
+              ifelse(ReleaseLongitude>=116.5 & ReleaseLongitude<129 & ReleaseLatitude<=(-26),"Zone2",
+              ifelse(ReleaseLongitude>=129 & ReleaseLongitude<135.7,"SA.west",
+              ifelse(ReleaseLongitude>=135.6,"SA.east",NA))))))
+
+Dat=Dat%>%
+  left_join(Rel.dat,by="TagCode")%>%
+  arrange(TagCode, Datetime) %>%
+  mutate(TagCode.prev=lag(TagCode,1),
+         Datetime.prev=lag(Datetime,1),
+         Longitude.prev=lag(Longitude,1),
+         Latitude.prev=lag(Latitude,1),
+         State.prev=lag(State,1),
+         Datetime.prev=as.POSIXct(ifelse(is.na(TagCode.prev)|!TagCode==TagCode.prev,
+                              as.character(ReleaseDate),as.character(Datetime.prev))),
+         Longitude.prev=ifelse(is.na(TagCode.prev)|!TagCode==TagCode.prev,
+                               ReleaseLongitude,Longitude.prev),
+         Latitude.prev=ifelse(is.na(TagCode.prev)|!TagCode==TagCode.prev,ReleaseLatitude,Latitude.prev),
+         State.prev=ifelse(is.na(TagCode.prev)|!TagCode==TagCode.prev,ReleaseState,State.prev),
+         TagCode.prev=ifelse(is.na(TagCode.prev),TagCode,TagCode.prev))
+
+#Some manipulations
+Dat = Dat %>%
+        mutate(Mn=month(Datetime),
               Yr=year(Datetime),
-              Longitude=ifelse(is.na(Longitude.x),Longitude.y,Longitude.x),
-              Latitude=ifelse(is.na(Latitude.x),Latitude.y,Latitude.x),
-              Latitude=-abs(Latitude),
               N=1,
               zone=ifelse(Latitude>(-33) & Latitude<=(-26) & Longitude<116.5,"WC",
                    ifelse(Latitude<=(-33) & Longitude<116.5,"Zone1",
                    ifelse(Longitude>=116.5 & Longitude<129 & Latitude<=(-26),"Zone2",
                    ifelse(Longitude>=129 & Longitude<135.7,"SA.west",
-                   ifelse(Longitude>=135.6,"SA.east",NA)))))) %>%
+                   ifelse(Longitude>=135.6,"SA.east",NA))))),
+              zone.prev=ifelse(Latitude.prev>(-33) & Latitude.prev<=(-26) & Longitude.prev<116.5,"WC",
+                        ifelse(Latitude.prev<=(-33) & Longitude.prev<116.5,"Zone1",
+                        ifelse(Longitude.prev>=116.5 & Longitude.prev<129 & Latitude.prev<=(-26),"Zone2",
+                        ifelse(Longitude.prev>=129 & Longitude.prev<135.7,"SA.west",
+                        ifelse(Longitude.prev>=135.6,"SA.east",NA))))),
+              State.prev=ifelse(Longitude.prev>129,'SA','WA')) %>%
       arrange(TagCode, Datetime) %>%
-      mutate(TagCode.prev=lag(TagCode,1),
-             Datetime.prev=lag(Datetime,1),
-             Longitude.prev=lag(Longitude,1),
-             Latitude.prev=lag(Latitude,1),
-             State.prev=lag(State,1),
-             zone.prev=lag(zone,1),
-             Same.station=ifelse(TagCode==TagCode.prev & 
+      mutate(Same.station=ifelse(TagCode==TagCode.prev & 
                                  Longitude==Longitude.prev &
                                  Latitude==Latitude.prev  ,"YES","NO"),
              Time=ifelse(TagCode==TagCode.prev,(Datetime-Datetime.prev)/60,NA)) %>%   #time in minutes
+      rename(Rel.state=ReleaseState)%>%
       select(c(TagCode,TagCode.prev,Species,Organisation,State,State.prev,
                Datetime,Datetime.prev,Mn,Yr,StationName,Longitude,Longitude.prev,
-               Latitude,Latitude.prev,Same.station,zone,zone.prev,Time,N))
+               Latitude,Latitude.prev,Same.station,zone,zone.prev,Time,N,Rel.state))
       
 if(sum(is.na(Dat$Latitude))>0) cat("------",sum(is.na(Dat$Latitude)),"RECORDS HAVE NO LATITUDE-----")
+
 
 #3.2 create useful objects
 state=unique(Dat$State)
@@ -111,7 +198,7 @@ if(do.expl=="YES")
 }
 
 #3.4 straight line distances (in km) between consecutive detections
-#note: apply algorithm to avoid going over land
+#       applying algorithm to avoid going over land
 Dat$Distance=distGeo(Dat[,c("Longitude.prev","Latitude.prev")],
                      Dat[,c("Longitude","Latitude")])
 Dat$Distance.c=Dat$Distance
@@ -173,22 +260,29 @@ Dat$Distance.c=ifelse(Dat$zone.prev=='SA.east' & Dat$zone=='Zone2',
 Dat$Distance=with(Dat,ifelse(TagCode==TagCode.prev,Distance/1000,NA)) 
 Dat$Distance.c=with(Dat,ifelse(TagCode==TagCode.prev,Distance.c/1000,NA)) 
 
-#MISSING: some ROM are to high, very receivers and short time!!!!
-#3.5 cross jurisdictional displacements and rates of movements (km per day)
+
+#3.5 cross jurisdictional displacements 
 Dat= Dat%>% 
-  mutate(ROM=ifelse(Time>0,Distance.c/(Time/(60*24)),NA),
-         Juris=ifelse(zone%in%c("WC","Zone1","Zone2"),"WA",
+  mutate(Juris=ifelse(zone%in%c("WC","Zone1","Zone2"),"WA",
                ifelse(zone%in%c("SA.east","SA.west"),"SA",NA)),
          Juris.prev=ifelse(zone.prev%in%c("WC","Zone1","Zone2"),"WA",
                     ifelse(zone.prev%in%c("SA.east","SA.west"),"SA",NA)),
          Same.juris=ifelse(Juris==Juris.prev,"YES",
-                    ifelse(!Juris==Juris.prev,"NO",NA))
-        )
+                    ifelse(!Juris==Juris.prev,"NO",NA)))
 
 
 #3.6 proportion of time per jurisdiction (straight line movement assumption)
-fn.prop.time.jur=function(d)
+fn.prop.time.jur=function(d)  
 {
+  d=rbind(data.frame(Datetime=d$Datetime.prev[1],
+                     Longitude=d$Longitude.prev[1],
+                     Latitude=d$Latitude.prev[1],
+                     zone=d$zone.prev[1],
+                     Juris=d$Juris.prev[1],
+                     Rel.state=d$Rel.state[1]),
+          d%>%select(Datetime,Longitude,Latitude,zone,Juris,Rel.state))
+  delta.t=max(d$Datetime)-min(d$Datetime)
+  Rel.state=unique(d$Rel.state)
   d=d %>% mutate(date=date(Datetime)) %>%
           arrange(Datetime) %>%
           distinct(date,zone,.keep_all = TRUE) %>%
@@ -229,13 +323,13 @@ fn.prop.time.jur=function(d)
       summarise(Total.days = as.numeric(sum(delta.t))) %>%
       as.data.frame() 
     Tab1$Prop=with(Tab1,Total.days/sum(Total.days))
-    Tab1=Tab1%>% select(index,Juris,Prop)
   }
   if(nrow(d.diff.jur)==0)
   {
     d=subset(d,!is.na(Juris))
-    Tab1=data.frame(index=1,Juris=unique(d$Juris),Prop=1)
+    Tab1=data.frame(index=1,Juris=unique(d$Juris),Total.days=delta.t,Prop=1)
   }
+  Tab1$Rel.state=Rel.state
    return(Tab1)
 }
 Prop.time=vector('list',length(TAG))
@@ -243,15 +337,13 @@ names(Prop.time)=TAG
 for(i in 1:length(TAG))
 {
   Prop.time[[i]]=fn.prop.time.jur(d=subset(Dat,TagCode==TAG[i],
-                  select=c(Datetime,Longitude,Latitude,zone,Juris)))
+                  select=c(Datetime,Longitude,Latitude,zone,Juris,Rel.state,
+                           Datetime.prev,Longitude.prev,Latitude.prev,zone.prev,Juris.prev)))
 }
 
 #ACA
-#3.7 connectivity plots 
-
-
-#3.8 seasonal patterns??
-
+#3.7 seasonal patterns??
+#plot distance from release thru time
 
 #4. Report Section-------------------------------------------------------
 setwd(paste(getwd(),"Results",sep="/"))
@@ -262,17 +354,8 @@ Tab1= group_by(Dat, TagCode, Species,Organisation,State) %>%
       as.data.frame()
 write.csv(Tab1,'Tab.tag.code_species_org_state.csv',row.names = F)
 
-#4.2 distribution of distance and ROM
-dist.fn=function(var)
-{
-  d=Dat[,match(var,names(Dat))]
-  d=d[d>0]
-  d=d[!is.na(d)]
-  plot(density(d,adjust=2), main="")
-}
-dist.fn(var="Distance.c")
-dist.fn(var="ROM")
-#4.3 proportion of time per jurisdiction
+
+#4.2 proportion of time per jurisdiction
 fn.plt.prop.time=function(d,CL1,CL2)
 {
   plot(1:length(d),xlim=c(0,1),ylim=c(0,length(d)),col="transparent",ylab="",
@@ -281,6 +364,9 @@ fn.plt.prop.time=function(d,CL1,CL2)
   {
     d[[n]]$col=with(d[[n]],ifelse(Juris=="WA",CL1,CL2))
     d[[n]]$cum.prop=cumsum(d[[n]]$Prop)
+    if(nrow(d[[n]])>1)Total.days=sum(d[[n]]$Total.days)
+    if(nrow(d[[n]])==1)Total.days=d[[n]]$Total.days
+    
     for(r in 1:nrow(d[[n]]))
     {
       if(r==1) x1=0 else
@@ -288,16 +374,22 @@ fn.plt.prop.time=function(d,CL1,CL2)
       x2=d[[n]]$cum.prop[r]
       polygon(x=c(x1,rep(x2,2),x1),y=c(n-0.5,n-0.5,n,n),col=d[[n]]$col[r])
       text(mean(c(x1,x2)),mean(c(n-0.5,n)),
-          paste(round(d[[n]]$Prop[r],2)*100,'%',sep=''),cex=.85)                 
+          paste(round(d[[n]]$Prop[r],2)*100,'%',sep=''),cex=.75)   
     }
+    Clr=ifelse(d[[n]]$Rel.state[1]=="WA",CL1,CL2)
+    text(0,n-.25,d[[n]]$Rel.state[1],pos=2,col=Clr,font=2)
+    text(1,n-.25,round(Total.days),pos=4)
+    text(1,n-.25,names(d)[n],pos=3,col='forestgreen',cex=.85)
+
   }
 }
 
-Cols=c("steelblue","pink")
+Cols=c("steelblue","pink2")
 names(Cols)=c("WA","SA")
 
 jpeg(file='figure_prop.time.jpg',width=1800,height=2400,units="px",res=300)
-par(mfcol=c(2,1),mar=c(2.5,1,1,.1),oma=c(.1,.1,.1,.5),las=1,mgp=c(1.25,.35,0),cex.axis=1.1,cex.lab=1.25)
+par(mfcol=c(2,1),mar=c(2.5,1,1,1.5),oma=c(.1,.1,.1,1),las=1,
+    mgp=c(1.25,.35,0),cex.axis=1.1,cex.lab=1.25,xpd=T)
 for(t in 1:length(TAG.species)) 
 {
   id=which(names(Prop.time)%in%TAG.species[[t]])

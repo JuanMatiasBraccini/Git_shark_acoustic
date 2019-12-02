@@ -4,7 +4,8 @@
 #      move across in perspective...
 
 #to do:
-    # map release location and trajectories (showing where detected)
+    # map release location and trajectories (showing where detected). Can do trajectories with progressive
+    #       shades of grey to show initial and most recent...
     # seasonal patterns: time line with X axis (julian day) and Y axis showing distance
     #                    from release location for each shark...(by species)
 
@@ -29,12 +30,11 @@ Dat=read.csv('All detections_2018 01.csv')
 SA.receivers=read.csv('GSV receiver location.csv')
 Blank_LatLong=read.csv('Blank_LatLong.csv')
 
+
 #SMN individual tag download Nov 2019
 setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie\\Data\\SMN_download_Nov_19')
-
 file_list  <- list.files()
 DATA.SMN=do.call(rbind,lapply(file_list,read.csv))
-
 setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie')
 
 
@@ -61,11 +61,17 @@ Mid.point_Cape.Leuwin=distGeo(Mid.point,Cape.Leuwin)
 #3.1 initial data manipulation
 
 #SMN
-DATA.SMN$Datetime=as.POSIXlt(DATA.SMN$ï..Datetime,format="%d-%B-%Y %H:%M",tz="UTC")
+DATA.SMN$n=grepl("/",DATA.SMN$ï..Datetime)
+DATA.SMN$n=with(DATA.SMN,ifelse(n=="TRUE","%d/%m/%Y %H:%M",ifelse(n=="FALSE","%d-%B-%Y %H:%M",NA)))
+DATA.SMN$Datetime=as.POSIXlt(DATA.SMN$ï..Datetime,format=DATA.SMN$n,tz="UTC")
+
 DATA.SMN$Date.local=date(DATA.SMN$Datetime)
 DATA.SMN$Time.local=times(format(DATA.SMN$Datetime, "%H:%M:%S"))
-DATA.SMN$ReleaseDate=as.POSIXlt(DATA.SMN$ReleaseDate,format="%d-%B-%Y",tz="UTC")
-  
+
+DATA.SMN$n=grepl("20",DATA.SMN$ReleaseDate)
+DATA.SMN$n=with(DATA.SMN,ifelse(n=="FALSE","%d-%B-%y",ifelse(n=="TRUE","%d-%B-%Y",NA)))
+DATA.SMN$ReleaseDate=as.POSIXlt(DATA.SMN$ReleaseDate,format=DATA.SMN$n,tz="UTC")
+DATA.SMN=DATA.SMN%>%select(-n)  
 
 #Charlie's file  
 Dat_no.name=subset(Dat,StationName=="") %>% select(-StationName)
@@ -77,7 +83,27 @@ Dat = left_join(Dat,SA.receivers,by=c("StationName" = "Location.name")) %>%
              Longitude=ifelse(is.na(Longitude.x),Longitude.y,Longitude.x),
              Latitude=ifelse(is.na(Latitude.x),Latitude.y,Latitude.x),
              Latitude=-abs(Latitude))
-             
+
+#manual addition of new shark
+add.dumy=Dat[1:3,] 
+add.dumy[,]=NA
+add.dumy=add.dumy%>%mutate(TagCode=27698,
+                           Species="bronze whaler",
+                           State='SA',
+                           Organisation='WA Fisheries',
+                           Latitude.y=-35.23,
+                           Longitude.y=136.07,
+                           Datetime=as.POSIXct(c("2019-06-09 12:37:00",
+                                                 "2019-06-09 13:37:00",
+                                                 "2019-06-09 14:37:00")),
+                           Month=6,
+                           Year=2019,
+                           Longitude=Longitude.y,
+                           Latitude=Latitude.y,
+                           Sex="M")
+Dat=rbind(Dat,add.dumy)
+
+
 #Combine Charlie's file and SMN
   #remove duplicates
 Dat$Unico=with(Dat,paste(TagCode,Latitude,Longitude,Datetime))
@@ -108,13 +134,16 @@ Rel.dat=DATA.SMN%>%
               select(TagCode,ReleaseDate,ReleaseLatitude,ReleaseLongitude)%>%
               mutate(ReleaseState=ifelse(ReleaseLongitude>129,'SA','WA'))
                    
-#dummy, replaces by Charlie's release data                          ACA also need rel length!!
-Rel.Charlie=data.frame(TagCode=c(30992, 23303, 33194, 26438),
-                       ReleaseDate=Rel.dat$ReleaseDate[1],
-                    ReleaseLatitude=-34.51000,
-                    ReleaseLongitude=138.0700) %>%
+#add missing SA release data                          
+#from Charlie:
+# 33194:  SA tagged shark, Carcharhinus brachyurus 104 cm TL (86 cm FL) Female Tagged 22/02/2013
+
+Rel.extra=data.frame(TagCode=c(30992, 23303),
+                       ReleaseDate=c("2012-04-26 00:01","2015-02-14 00:01"),
+                    ReleaseLatitude=c(-35.1058,-34.91),
+                    ReleaseLongitude=c(117.85105,136.22)) %>%
                     mutate(ReleaseState=ifelse(ReleaseLongitude>129,'SA','WA'))
-Rel.dat=rbind(Rel.dat,Rel.Charlie)%>%
+Rel.dat=rbind(Rel.dat,Rel.extra)%>%
   mutate(Relzone=ifelse(ReleaseLatitude>(-33) & ReleaseLatitude<=(-26) & ReleaseLongitude<116.5,"WC",
               ifelse(ReleaseLatitude<=(-33) & ReleaseLongitude<116.5,"Zone1",
               ifelse(ReleaseLongitude>=116.5 & ReleaseLongitude<129 & ReleaseLatitude<=(-26),"Zone2",
@@ -164,6 +193,17 @@ Dat = Dat %>%
                Latitude,Latitude.prev,Same.station,zone,zone.prev,Time,N,Rel.state))
       
 if(sum(is.na(Dat$Latitude))>0) cat("------",sum(is.na(Dat$Latitude)),"RECORDS HAVE NO LATITUDE-----")
+
+
+#Remove irrelevant TagCodes
+Dat=subset(Dat,!TagCode%in%c(26438,33194))
+
+#Check number of detections per state
+A=as.data.frame(table(Dat$TagCode))
+B=as.matrix(table(Dat$TagCode,Dat$State))
+colnames(A)=c("TagCode","Total")
+A$SA=B[,1]
+A$WA=B[,2]
 
 
 #3.2 create useful objects
@@ -365,7 +405,7 @@ TAB.conv.rel.rec=Conv.Tagging%>%
 
 
 #4. Report Section-------------------------------------------------------
-setwd(paste(getwd(),"Results",sep="/"))
+setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie\\Results')
 
 #4.1 table of tagcodes by species and state
 Tab1= group_by(Dat, TagCode, Species,Organisation,State) %>%
@@ -378,7 +418,7 @@ write.csv(Tab1,'Tab.tag.code_species_org_state.csv',row.names = F)
 fn.plt.prop.time=function(d,CL1,CL2)
 {
   plot(1:length(d),xlim=c(0,1),ylim=c(0,length(d)),col="transparent",ylab="",
-       xlab="Proportion of time",yaxt='n')
+       xlab="",yaxt='n',xaxt='n',bty='n')
   for(n in 1:length(d))
   {
     d[[n]]$col=with(d[[n]],ifelse(Juris=="WA",CL1,CL2))
@@ -397,7 +437,7 @@ fn.plt.prop.time=function(d,CL1,CL2)
     }
     Clr=ifelse(d[[n]]$Rel.state[1]=="WA",CL1,CL2)
     text(0,n-.25,d[[n]]$Rel.state[1],pos=2,col=Clr,font=2)
-    text(1,n-.25,round(Total.days),pos=4)
+    text(1,n-.25,round(Total.days),pos=4,cex=.85)
     text(1,n-.25,names(d)[n],pos=3,col='forestgreen',cex=.85)
 
   }
@@ -406,8 +446,9 @@ fn.plt.prop.time=function(d,CL1,CL2)
 Cols=c("steelblue","pink2")
 names(Cols)=c("WA","SA")
 
-jpeg(file='figure_prop.time.jpg',width=1800,height=2400,units="px",res=300)
-par(mfcol=c(2,1),mar=c(2.5,1,1,1.5),oma=c(.1,.1,.1,1),las=1,
+tiff(file='figure_prop.time.tiff',width=1800,height=2400,units="px",res=300,
+     compression="lzw+p")
+par(mfcol=c(2,1),mar=c(1,1,1,1.25),oma=c(.1,.1,.1,.5),las=1,
     mgp=c(1.25,.35,0),cex.axis=1.1,cex.lab=1.25,xpd=T)
 for(t in 1:length(TAG.species)) 
 {
@@ -416,6 +457,7 @@ for(t in 1:length(TAG.species))
   if(t==2)legend('bottom',c("WA","SA"),fill=Cols,horiz=T,bty='n')
   mtext(names(TAG.species)[t],3,cex=1.5)
 }
+mtext("Percent of time",1,line=-2.5,cex=1.5)
 dev.off()
 
 

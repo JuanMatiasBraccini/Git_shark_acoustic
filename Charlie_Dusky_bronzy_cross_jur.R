@@ -27,7 +27,7 @@ options(stringsAsFactors = FALSE)
 #1. Data Section---------------------------------------------------------
 setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie\\Data')
 Dat=read.csv('All detections_2018 01.csv')
-SA.receivers=read.csv('GSV receiver location.csv')
+SA.receivers=read.csv('GSV receiver location-IMOS.csv')
 Blank_LatLong=read.csv('Blank_LatLong.csv')
 
 
@@ -100,7 +100,8 @@ add.dumy=add.dumy%>%mutate(TagCode=27698,
                            Year=2019,
                            Longitude=Longitude.y,
                            Latitude=Latitude.y,
-                           Sex="M")
+                           Sex="M",
+                           Station.type="IMOS")
 Dat=rbind(Dat,add.dumy)
 
 
@@ -110,6 +111,7 @@ Dat$Unico=with(Dat,paste(TagCode,Latitude,Longitude,Datetime))
 DATA.SMN$ReleaseLatitude=-abs(DATA.SMN$ReleaseLatitude)
 DATA.SMN$Latitude=-abs(DATA.SMN$Latitude)
 DATA.SMN$Unico=with(DATA.SMN,paste(TagCode,Latitude,Longitude,Datetime))
+DATA.SMN$Station.type=with(DATA.SMN,ifelse(grepl("OTN",StationName),"IMOS","DoF"))
 duplis=which(DATA.SMN$Unico%in%Dat$Unico)
 if(length(duplis)>0)DATA.SMN=DATA.SMN[-duplis,]
 dummy=Dat[1:nrow(DATA.SMN),]
@@ -125,6 +127,8 @@ dummy=dummy%>%mutate(
   Datetime=as.POSIXct(DATA.SMN$Datetime),
   Unico=DATA.SMN$Unico)
 
+Dat$Station.type=with(Dat,ifelse(grepl("OTN",StationName),"IMOS",
+                          ifelse(is.na(Station.type) & Longitude<129,"DoF",Station.type)))
 Dat=rbind(Dat,dummy) 
 
 #Add release date and location as first location
@@ -190,12 +194,12 @@ Dat = Dat %>%
       rename(Rel.state=ReleaseState)%>%
       select(c(TagCode,TagCode.prev,Species,Organisation,State,State.prev,
                Datetime,Datetime.prev,Mn,Yr,StationName,Longitude,Longitude.prev,
-               Latitude,Latitude.prev,Same.station,zone,zone.prev,Time,N,Rel.state))
+               Latitude,Latitude.prev,Same.station,zone,zone.prev,Time,N,Rel.state,Station.type))
       
 if(sum(is.na(Dat$Latitude))>0) cat("------",sum(is.na(Dat$Latitude)),"RECORDS HAVE NO LATITUDE-----")
 
 
-#Remove irrelevant TagCodes
+#Remove irrelevant TagCodes (whtie sharks)
 Dat=subset(Dat,!TagCode%in%c(26438,33194))
 
 #Check number of detections per state
@@ -206,110 +210,24 @@ A$SA=B[,1]
 A$WA=B[,2]
 
 
-#3.2 create useful objects
-state=unique(Dat$State)
-TAG=unique(Dat$TagCode)
-Sp=unique(Dat$Species)
-TAG.species=vector('list',length(Sp))
-names(TAG.species)=Sp
-for(t in 1:length(TAG.species)) TAG.species[[t]]=unique(subset(Dat,Species==Sp[t])$TagCode)
-
-#3.3 preliminary stuff
-Lon.range=range(Dat$Longitude,na.rm=T)
-Lon.range[2]=ifelse(Lon.range[2]<129,140,Lon.range[2])
-Lat.range=range(Dat$Latitude,na.rm=T)
-Lat.range[1]=ifelse(Lat.range[1]>(-35),-38,Lat.range[1])
-XLIM=c(Lon.range[1],Lon.range[2])
-YLIM=c(Lat.range[1],Lat.range[2])
-if(do.expl=="YES")
-{
-  fn.plt1=function(TG)
-  {
-    a=subset(Dat,TagCode==TG)
-    plot(a$Longitude,a$Latitude,ylim=YLIM,xlim=XLIM,las=1,ylab="Lat",xlab="Long",
-         main=paste(unique(a$Species),"_",unique(a$TagCode)," (n=",nrow(a),
-                    " detections)",sep=""))
-  }
-  pdf("Results/Exploratory.pdf") 
-  sapply(TAG,fn.plt1)
-  dev.off() 
-}
-
-#3.4 straight line distances (in km) between consecutive detections
-#       applying algorithm to avoid going over land
-Dat$Distance=distGeo(Dat[,c("Longitude.prev","Latitude.prev")],
-                     Dat[,c("Longitude","Latitude")])
-Dat$Distance.c=Dat$Distance
-Dat$Distance.c=ifelse(Dat$zone.prev=='SA.east' & Dat$zone=='Zone2',
-                      distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Eyre)+
-                      Eyre_SA.Border+
-                      distGeo(SA.Border,Dat[,c("Longitude","Latitude")]),
-              ifelse(Dat$zone.prev=='SA.east' & Dat$zone=='Zone1' &
-                     Dat$Longitude>= Cape.Leuwin[1] & Dat$Latitude<= Cape.Leuwin[2],
-                      distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Eyre)+
-                      Eyre_SA.Border+SA.Border_Mid.point+
-                      distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),   
-              ifelse(Dat$zone.prev=='SA.east' & Dat$zone%in%c('Zone1','WC') & 
-                     Dat$Latitude>Cape.Leuwin[2],
-                      distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Eyre)+
-                      Eyre_SA.Border+SA.Border_Mid.point+Mid.point_Cape.Leuwin+
-                      distGeo(Cape.Leuwin,Dat[,c("Longitude","Latitude")]), 
-              
-              ifelse(Dat$zone.prev=='Zone2' & Dat$zone=='SA.east',
-                      distGeo(Dat[,c("Longitude.prev","Latitude.prev")],SA.Border)+
-                      Eyre_SA.Border+
-                      distGeo(Eyre,Dat[,c("Longitude","Latitude")]),   
-              ifelse(Dat$zone.prev=='Zone2' & Dat$zone=='Zone1' &
-                     Dat$Longitude>= Cape.Leuwin[1] & Dat$Latitude<= Cape.Leuwin[2],
-                      distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
-                      distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),
-              ifelse(Dat$zone.prev=='Zone2' & Dat$zone%in%c('Zone1','WC') & 
-                     Dat$Latitude>Cape.Leuwin[2],
-                      distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
-                      Mid.point_Cape.Leuwin+
-                      distGeo(Cape.Leuwin,Dat[,c("Longitude","Latitude")]),
- 
-              ifelse(Dat$zone.prev%in%c('Zone1','WC') & Dat$zone=='SA.east' & 
-                     Dat$Latitude.prev> Cape.Leuwin[2],
-                      distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Cape.Leuwin)+
-                      Mid.point_Cape.Leuwin+SA.Border_Mid.point+Eyre_SA.Border+
-                      distGeo(Eyre,Dat[,c("Longitude","Latitude")]), 
-              ifelse(Dat$zone.prev%in%c('Zone1') & Dat$zone=='SA.east' & 
-                     Dat$Latitude.prev<= Cape.Leuwin[2],
-                      distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
-                      SA.Border_Mid.point+Eyre_SA.Border+
-                      distGeo(Eyre,Dat[,c("Longitude","Latitude")]), 
-                     
-              ifelse(Dat$zone.prev%in%c('Zone1','WC') & Dat$zone=='Zone2' &
-                      Dat$Longitude< Cape.Leuwin[1] & Dat$Latitude> Cape.Leuwin[2],
-                      distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Cape.Leuwin)+
-                      Mid.point_Cape.Leuwin+
-                      distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),
-              ifelse(Dat$zone.prev%in%c('Zone1') & Dat$zone=='Zone2' &
-                     Dat$Longitude>= Cape.Leuwin[1] & Dat$Latitude<= Cape.Leuwin[2],
-                      distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
-                      distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),
-              ifelse(Dat$zone.prev%in%c('Zone1','WC') & Dat$zone=='Zone1' &
-                     Dat$Longitude< Cape.Leuwin[1] & Dat$Latitude> Cape.Leuwin[2],
-                      distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Cape.Leuwin)+
-                      distGeo(Cape.Leuwin,Dat[,c("Longitude","Latitude")]),
-              Dat$Distance.c)))))))))))
-
-Dat$Distance=with(Dat,ifelse(TagCode==TagCode.prev,Distance/1000,NA)) 
-Dat$Distance.c=with(Dat,ifelse(TagCode==TagCode.prev,Distance.c/1000,NA)) 
+# Report table of tagcodes by species and state----------------------------------------------------------------
+setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie\\Results')
+Tab1= group_by(Dat, TagCode, Species,Organisation,State) %>%
+  summarise(sum = sum(N)) %>%
+  as.data.frame()
+write.csv(Tab1,'Tab.tag.code_species_org_state.csv',row.names = F)
 
 
-#3.5 cross jurisdictional displacements 
-Dat= Dat%>% 
-  mutate(Juris=ifelse(zone%in%c("WC","Zone1","Zone2"),"WA",
-               ifelse(zone%in%c("SA.east","SA.west"),"SA",NA)),
-         Juris.prev=ifelse(zone.prev%in%c("WC","Zone1","Zone2"),"WA",
-                    ifelse(zone.prev%in%c("SA.east","SA.west"),"SA",NA)),
-         Same.juris=ifelse(Juris==Juris.prev,"YES",
-                    ifelse(!Juris==Juris.prev,"NO",NA)))
 
+#Run data set scenarios-------------------------------------------------------
+Dat=Dat%>%mutate(Station.type=
+                   ifelse(is.na(Station.type) & Longitude<115.626 & Latitude<(-31),
+                          "IMOS",
+                   ifelse(is.na(Station.type) & Longitude>116,"DoF",Station.type)))
+Dat.scen1=Dat
+Dat.scen2=subset(Dat, is.na(Station.type) | Station.type%in%c("DoF","Flinders"))
 
-#3.6 proportion of time per jurisdiction (straight line movement assumption)
+#proportion of time per jurisdiction (straight line movement assumption)
 fn.prop.time.jur=function(d)  
 {
   d=rbind(data.frame(Datetime=d$Datetime.prev[1],
@@ -322,15 +240,15 @@ fn.prop.time.jur=function(d)
   delta.t=max(d$Datetime)-min(d$Datetime)
   Rel.state=unique(d$Rel.state)
   d=d %>% mutate(date=date(Datetime)) %>%
-          arrange(Datetime) %>%
-          distinct(date,zone,.keep_all = TRUE) %>%
-          mutate(Juris.prev=lag(Juris,1),
-                 Longitude.prev=lag(Longitude,1),
-                 Latitude.prev=lag(Latitude,1),
-                 date.prev=lag(date,1),
-                 delta.t=date-date.prev,
-                 Same.juris=ifelse(Juris==Juris.prev,"YES",
-                            ifelse(!Juris==Juris.prev,"NO",NA)))
+    arrange(Datetime) %>%
+    distinct(date,zone,.keep_all = TRUE) %>%
+    mutate(Juris.prev=lag(Juris,1),
+           Longitude.prev=lag(Longitude,1),
+           Latitude.prev=lag(Latitude,1),
+           date.prev=lag(date,1),
+           delta.t=date-date.prev,
+           Same.juris=ifelse(Juris==Juris.prev,"YES",
+                             ifelse(!Juris==Juris.prev,"NO",NA)))
   d.diff.jur=subset(d,Same.juris=="NO")     
   d=subset(d,!Same.juris=="NO"|is.na(Same.juris)) 
   if(nrow(d.diff.jur)>0)
@@ -368,53 +286,10 @@ fn.prop.time.jur=function(d)
     Tab1=data.frame(index=1,Juris=unique(d$Juris),Total.days=delta.t,Prop=1)
   }
   Tab1$Rel.state=Rel.state
-   return(Tab1)
-}
-Prop.time=vector('list',length(TAG))
-names(Prop.time)=TAG
-for(i in 1:length(TAG))
-{
-  Prop.time[[i]]=fn.prop.time.jur(d=subset(Dat,TagCode==TAG[i],
-                  select=c(Datetime,Longitude,Latitude,zone,Juris,Rel.state,
-                           Datetime.prev,Longitude.prev,Latitude.prev,zone.prev,Juris.prev)))
+  return(Tab1)
 }
 
-#ACA
-#3.7 seasonal patterns??
-#plot distance from release thru time
-
-
-#3.8 conventional tagging
-Conv.Tagging=Tagging%>%
-  filter(Species%in%c("BW","CP") & !is.na(Lat.rels))%>%
-  mutate(Recaptured=ifelse(!is.na(Yr.rec)|!is.na(Lat.rec)|!is.na(Long.rec),"Yes","No"),
-         Rel.juris=ifelse(Long.rels>129,"SA","WA"),
-         Rec.juris=ifelse( Recaptured=="Yes"& Long.rec>129,"SA","WA"),
-         Col.sp=ifelse(Species=="BW",2,3),
-         Same.Juris=ifelse(Recaptured=="Yes"& Rel.juris==Rec.juris,"Yes",
-                    ifelse(Recaptured=="Yes"& !Rel.juris==Rec.juris,"No",NA)))
-TAB.conv.rel.rec=Conv.Tagging%>%
-  group_by(Rel.juris,Rec.juris,COMMON_NAME,Recaptured)%>%
-  summarise(n=n())%>%
-  filter(!is.na(Rec.juris))%>%
-  arrange(COMMON_NAME,Rel.juris,Recaptured)%>%
-  data.frame%>%
-  mutate(Rec.juris=ifelse(Recaptured=="No","N/A",Rec.juris))
-
-
-
-
-#4. Report Section-------------------------------------------------------
-setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie\\Results')
-
-#4.1 table of tagcodes by species and state
-Tab1= group_by(Dat, TagCode, Species,Organisation,State) %>%
-      summarise(sum = sum(N)) %>%
-      as.data.frame()
-write.csv(Tab1,'Tab.tag.code_species_org_state.csv',row.names = F)
-
-
-#4.2 proportion of time per jurisdiction
+#proportion of time per jurisdiction
 fn.plt.prop.time=function(d,CL1,CL2)
 {
   plot(1:length(d),xlim=c(0,1),ylim=c(0,length(d)),col="transparent",ylab="",
@@ -429,42 +304,180 @@ fn.plt.prop.time=function(d,CL1,CL2)
     for(r in 1:nrow(d[[n]]))
     {
       if(r==1) x1=0 else
-               x1=d[[n]]$cum.prop[r-1]
+        x1=d[[n]]$cum.prop[r-1]
       x2=d[[n]]$cum.prop[r]
       polygon(x=c(x1,rep(x2,2),x1),y=c(n-0.5,n-0.5,n,n),col=d[[n]]$col[r])
       text(mean(c(x1,x2)),mean(c(n-0.5,n)),
-          paste(round(d[[n]]$Prop[r],2)*100,'%',sep=''),cex=.75)   
+           paste(round(d[[n]]$Prop[r],2)*100,'%',sep=''),cex=.75)   
     }
     Clr=ifelse(d[[n]]$Rel.state[1]=="WA",CL1,CL2)
     text(0,n-.25,d[[n]]$Rel.state[1],pos=2,col=Clr,font=2)
     text(1,n-.25,round(Total.days),pos=4,cex=.85)
     text(1,n-.25,names(d)[n],pos=3,col='forestgreen',cex=.85)
-
+    
   }
 }
 
+#function for wrapping around scenarios
+fun.run.scen=function(Dat,SCEN)
+{
+  #create useful objects
+  state=unique(Dat$State)
+  TAG=unique(Dat$TagCode)
+  Sp=unique(Dat$Species)
+  TAG.species=vector('list',length(Sp))
+  names(TAG.species)=Sp
+  for(t in 1:length(TAG.species)) TAG.species[[t]]=unique(subset(Dat,Species==Sp[t])$TagCode)
+  
+  #preliminary stuff
+  Lon.range=range(Dat$Longitude,na.rm=T)
+  Lon.range[2]=ifelse(Lon.range[2]<129,140,Lon.range[2])
+  Lat.range=range(Dat$Latitude,na.rm=T)
+  Lat.range[1]=ifelse(Lat.range[1]>(-35),-38,Lat.range[1])
+  XLIM=c(Lon.range[1],Lon.range[2])
+  YLIM=c(Lat.range[1],Lat.range[2])
+  if(do.expl=="YES")
+  {
+    fn.plt1=function(TG)
+    {
+      a=subset(Dat,TagCode==TG)
+      plot(a$Longitude,a$Latitude,ylim=YLIM,xlim=XLIM,las=1,ylab="Lat",xlab="Long",
+           main=paste(unique(a$Species),"_",unique(a$TagCode)," (n=",nrow(a),
+                      " detections)",sep=""))
+    }
+    pdf("Results/Exploratory.pdf") 
+    sapply(TAG,fn.plt1)
+    dev.off() 
+  }
+  
+  #straight line distances (in km) between consecutive detections
+  #       applying algorithm to avoid going over land
+  Dat$Distance=distGeo(Dat[,c("Longitude.prev","Latitude.prev")],
+                       Dat[,c("Longitude","Latitude")])
+  Dat$Distance.c=Dat$Distance
+  Dat$Distance.c=ifelse(Dat$zone.prev=='SA.east' & Dat$zone=='Zone2',
+                        distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Eyre)+
+                          Eyre_SA.Border+
+                          distGeo(SA.Border,Dat[,c("Longitude","Latitude")]),
+                        ifelse(Dat$zone.prev=='SA.east' & Dat$zone=='Zone1' &
+                                 Dat$Longitude>= Cape.Leuwin[1] & Dat$Latitude<= Cape.Leuwin[2],
+                               distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Eyre)+
+                                 Eyre_SA.Border+SA.Border_Mid.point+
+                                 distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),   
+                               ifelse(Dat$zone.prev=='SA.east' & Dat$zone%in%c('Zone1','WC') & 
+                                        Dat$Latitude>Cape.Leuwin[2],
+                                      distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Eyre)+
+                                        Eyre_SA.Border+SA.Border_Mid.point+Mid.point_Cape.Leuwin+
+                                        distGeo(Cape.Leuwin,Dat[,c("Longitude","Latitude")]), 
+                                      
+                                      ifelse(Dat$zone.prev=='Zone2' & Dat$zone=='SA.east',
+                                             distGeo(Dat[,c("Longitude.prev","Latitude.prev")],SA.Border)+
+                                               Eyre_SA.Border+
+                                               distGeo(Eyre,Dat[,c("Longitude","Latitude")]),   
+                                             ifelse(Dat$zone.prev=='Zone2' & Dat$zone=='Zone1' &
+                                                      Dat$Longitude>= Cape.Leuwin[1] & Dat$Latitude<= Cape.Leuwin[2],
+                                                    distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
+                                                      distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),
+                                                    ifelse(Dat$zone.prev=='Zone2' & Dat$zone%in%c('Zone1','WC') & 
+                                                             Dat$Latitude>Cape.Leuwin[2],
+                                                           distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
+                                                             Mid.point_Cape.Leuwin+
+                                                             distGeo(Cape.Leuwin,Dat[,c("Longitude","Latitude")]),
+                                                           
+                                                           ifelse(Dat$zone.prev%in%c('Zone1','WC') & Dat$zone=='SA.east' & 
+                                                                    Dat$Latitude.prev> Cape.Leuwin[2],
+                                                                  distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Cape.Leuwin)+
+                                                                    Mid.point_Cape.Leuwin+SA.Border_Mid.point+Eyre_SA.Border+
+                                                                    distGeo(Eyre,Dat[,c("Longitude","Latitude")]), 
+                                                                  ifelse(Dat$zone.prev%in%c('Zone1') & Dat$zone=='SA.east' & 
+                                                                           Dat$Latitude.prev<= Cape.Leuwin[2],
+                                                                         distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
+                                                                           SA.Border_Mid.point+Eyre_SA.Border+
+                                                                           distGeo(Eyre,Dat[,c("Longitude","Latitude")]), 
+                                                                         
+                                                                         ifelse(Dat$zone.prev%in%c('Zone1','WC') & Dat$zone=='Zone2' &
+                                                                                  Dat$Longitude< Cape.Leuwin[1] & Dat$Latitude> Cape.Leuwin[2],
+                                                                                distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Cape.Leuwin)+
+                                                                                  Mid.point_Cape.Leuwin+
+                                                                                  distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),
+                                                                                ifelse(Dat$zone.prev%in%c('Zone1') & Dat$zone=='Zone2' &
+                                                                                         Dat$Longitude>= Cape.Leuwin[1] & Dat$Latitude<= Cape.Leuwin[2],
+                                                                                       distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
+                                                                                         distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),
+                                                                                       ifelse(Dat$zone.prev%in%c('Zone1','WC') & Dat$zone=='Zone1' &
+                                                                                                Dat$Longitude< Cape.Leuwin[1] & Dat$Latitude> Cape.Leuwin[2],
+                                                                                              distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Cape.Leuwin)+
+                                                                                                distGeo(Cape.Leuwin,Dat[,c("Longitude","Latitude")]),
+                                                                                              Dat$Distance.c)))))))))))
+  
+  Dat$Distance=with(Dat,ifelse(TagCode==TagCode.prev,Distance/1000,NA)) 
+  Dat$Distance.c=with(Dat,ifelse(TagCode==TagCode.prev,Distance.c/1000,NA)) 
+  
+  
+  #cross jurisdictional displacements 
+  Dat= Dat%>% 
+    mutate(Juris=ifelse(zone%in%c("WC","Zone1","Zone2"),"WA",
+                        ifelse(zone%in%c("SA.east","SA.west"),"SA",NA)),
+           Juris.prev=ifelse(zone.prev%in%c("WC","Zone1","Zone2"),"WA",
+                             ifelse(zone.prev%in%c("SA.east","SA.west"),"SA",NA)),
+           Same.juris=ifelse(Juris==Juris.prev,"YES",
+                             ifelse(!Juris==Juris.prev,"NO",NA)))
+  
+  Prop.time=vector('list',length(TAG))
+  names(Prop.time)=TAG
+  for(i in 1:length(TAG))
+  {
+    Prop.time[[i]]=fn.prop.time.jur(d=subset(Dat,TagCode==TAG[i],
+                                             select=c(Datetime,Longitude,Latitude,zone,Juris,Rel.state,
+                                                      Datetime.prev,Longitude.prev,Latitude.prev,zone.prev,Juris.prev)))
+  }
+  
+  tiff(file=paste('figure_prop.time_',SCEN,'.tiff',sep=''),width=1800,height=2400,units="px",res=300,
+       compression="lzw+p")
+  par(mfcol=c(2,1),mar=c(1,1,1,1.25),oma=c(.1,.1,.1,.5),las=1,
+      mgp=c(1.25,.35,0),cex.axis=1.1,cex.lab=1.25,xpd=T)
+  for(t in 1:length(TAG.species)) 
+  {
+    id=which(names(Prop.time)%in%TAG.species[[t]])
+    fn.plt.prop.time(d=Prop.time[id],CL1=Cols[1],CL2=Cols[2])
+    if(t==2)legend('bottom',c("WA","SA"),fill=Cols,horiz=T,bty='n')
+    mtext(names(TAG.species)[t],3,cex=1.5)
+  }
+  mtext("Percent of time",1,line=-2.5,cex=1.5)
+  dev.off()
+  
+  
+  #seasonal patterns?? plot distance from release thru time  #ACA, missing
+  
+  
+  #Residency
+  
+  
+}
 Cols=c("steelblue","pink2")
 names(Cols)=c("WA","SA")
 
-tiff(file='figure_prop.time.tiff',width=1800,height=2400,units="px",res=300,
-     compression="lzw+p")
-par(mfcol=c(2,1),mar=c(1,1,1,1.25),oma=c(.1,.1,.1,.5),las=1,
-    mgp=c(1.25,.35,0),cex.axis=1.1,cex.lab=1.25,xpd=T)
-for(t in 1:length(TAG.species)) 
-{
-  id=which(names(Prop.time)%in%TAG.species[[t]])
-  fn.plt.prop.time(d=Prop.time[id],CL1=Cols[1],CL2=Cols[2])
-  if(t==2)legend('bottom',c("WA","SA"),fill=Cols,horiz=T,bty='n')
-  mtext(names(TAG.species)[t],3,cex=1.5)
-}
-mtext("Percent of time",1,line=-2.5,cex=1.5)
-dev.off()
+fun.run.scen(Dat.scen1,"Scen1")
+fun.run.scen(Dat.scen2,"Scen2")
 
 
-#4.3
+# Conventional tagging----------------------------------------------------------------
+Conv.Tagging=Tagging%>%
+  filter(Species%in%c("BW","CP") & !is.na(Lat.rels))%>%
+  mutate(Recaptured=ifelse(!is.na(Yr.rec)|!is.na(Lat.rec)|!is.na(Long.rec),"Yes","No"),
+         Rel.juris=ifelse(Long.rels>129,"SA","WA"),
+         Rec.juris=ifelse( Recaptured=="Yes"& Long.rec>129,"SA","WA"),
+         Col.sp=ifelse(Species=="BW",2,3),
+         Same.Juris=ifelse(Recaptured=="Yes"& Rel.juris==Rec.juris,"Yes",
+                           ifelse(Recaptured=="Yes"& !Rel.juris==Rec.juris,"No",NA)))
+TAB.conv.rel.rec=Conv.Tagging%>%
+  group_by(Rel.juris,Rec.juris,COMMON_NAME,Recaptured)%>%
+  summarise(n=n())%>%
+  filter(!is.na(Rec.juris))%>%
+  arrange(COMMON_NAME,Rel.juris,Recaptured)%>%
+  data.frame%>%
+  mutate(Rec.juris=ifelse(Recaptured=="No","N/A",Rec.juris))
 
-
-#4.4 Export conventional tagging
 write.csv(TAB.conv.rel.rec,"Summary.conv.tag.csv",row.names = F)
 
 with(subset(Conv.Tagging,Recaptured=="Yes" & Same.Juris=="No"),{
@@ -472,12 +485,19 @@ with(subset(Conv.Tagging,Recaptured=="Yes" & Same.Juris=="No"),{
   arrows(Long.rels,Lat.rels,Long.rec,Lat.rec,col=Col.sp)
 })
 Siz.sex.cross.conv=Conv.Tagging%>%
-        filter(Recaptured=="Yes" & Same.Juris=="No")%>%
-        mutate(Date.rel=as.POSIXct(paste(Yr.rel,Mn.rel,Day.rel,sep="-")),
-                 Date.rec=as.POSIXct(paste(Yr.rec,Mn.rec,Day.rec,sep="-")),
-                 time.at.liberty=Date.rec-Date.rel)%>%
+  filter(Recaptured=="Yes" & Same.Juris=="No")%>%
+  mutate(Date.rel=as.POSIXct(paste(Yr.rel,Mn.rel,Day.rel,sep="-")),
+         Date.rec=as.POSIXct(paste(Yr.rec,Mn.rec,Day.rec,sep="-")),
+         time.at.liberty=Date.rec-Date.rel)%>%
   select(Species,COMMON_NAME,Lat.rels,Long.rels,Lat.rec,Long.rec,
          Rel.juris,Rec.juris,Rel_FL,Sex,Date.rel,
          Date.rec,time.at.liberty)%>%
   arrange(Species,Date.rel,Sex)
 write.csv(Siz.sex.cross.conv,"Summary.conv.tag_time.liberty.csv",row.names = F)
+
+
+
+
+
+
+

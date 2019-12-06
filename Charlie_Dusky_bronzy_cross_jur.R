@@ -21,6 +21,9 @@ library(lubridate)
 library(tidyverse)
 library(geosphere)
 library(chron) 
+library(mgcv)
+library(mgcViz)
+
 
 options(stringsAsFactors = FALSE)
 
@@ -318,8 +321,33 @@ fn.plt.prop.time=function(d,CL1,CL2)
   }
 }
 
+#residency
+fn.plt.residency=function(d,CL1,CL2)
+{
+  plot(1:length(d),xlim=c(0,1),ylim=c(0,length(d)),col="transparent",ylab="",
+       xlab="",yaxt='n',xaxt='n',bty='n')
+  for(n in 1:length(d))
+  {
+    d[[n]]$col=with(d[[n]],ifelse(Juris=="WA",CL1,CL2))
+    d[[n]]$cum.prop=cumsum(d[[n]]$Prop)
+    
+    for(r in 1:nrow(d[[n]]))
+    {
+      if(r==1) x1=0 else
+        x1=d[[n]]$cum.prop[r-1]
+      x2=d[[n]]$cum.prop[r]
+      polygon(x=c(x1,rep(x2,2),x1),y=c(n-0.5,n-0.5,n,n),col=d[[n]]$col[r])
+      text(mean(c(x1,x2)),mean(c(n-0.5,n)),
+           paste(round(d[[n]]$Prop[r],2)*100,'%',sep=''),cex=.75)   
+    }
+    Clr=ifelse(d[[n]]$Rel.state[1]=="WA",CL1,CL2)
+    text(0,n-.25,d[[n]]$Rel.state[1],pos=2,col=Clr,font=2)
+    text(1,n-.4,names(d)[n],pos=3,col='forestgreen',cex=.85)
+    
+  }
+}
+
 #function for wrapping around scenarios
-library(mgcv)
 fun.run.scen=function(Dat,SCEN)
 {
   #create useful objects
@@ -449,37 +477,58 @@ fun.run.scen=function(Dat,SCEN)
   
   
   #seasonal patterns plot distance from release thru time 
+  Spics=Dat%>%distinct(TagCode,.keep_all = T)%>%select(TagCode,Species)
   Seasonal=Dat%>%
             left_join(subset(Rel.dat,select=c(TagCode,ReleaseDate,
                                               ReleaseLatitude,ReleaseLongitude)),by='TagCode')%>%
-            arrange(TagCode,Datetime)
+            arrange(TagCode,Datetime)%>%
+            mutate(Delta.t=as.numeric(difftime(Datetime,ReleaseDate)))
   Seasonal$Dist.frm.rel=ifelse(Seasonal$TagCode==Seasonal$TagCode.prev,
                            distGeo(Seasonal[,c("ReleaseLongitude","ReleaseLatitude")],
                                    Seasonal[,c("Longitude","Latitude")])/1000,NA)
-  Seasonal=Seasonal%>%
-        mutate(Delta.t=as.numeric(difftime(Datetime,ReleaseDate)))%>%
+  Add.relis=Seasonal[1:length(unique(Seasonal$TagCode)),]
+  Add.relis[,]=NA
+  Add.relis=Add.relis%>%mutate(TagCode=Rel.dat$TagCode,
+                               TagCode.prev=Rel.dat$TagCode,
+                               Datetime=Rel.dat$ReleaseDate,
+                               Dist.frm.rel=0,
+                               Delta.t=0)%>%
+    select(-Species)%>%
+    left_join(Spics,by='TagCode')%>%
+    select(names(Seasonal))
+  
+  Seasonal=rbind(Seasonal,Add.relis)%>%
+        arrange(TagCode,Delta.t)%>%
         select(TagCode,TagCode.prev,Species,Datetime,
-                             ReleaseLongitude,ReleaseLatitude,Longitude,
-                             Latitude,Dist.frm.rel,Delta.t)%>%
-        filter(!is.na(Dist.frm.rel))
+                             Dist.frm.rel,Delta.t)%>%
+        filter(!is.na(Dist.frm.rel))%>%
+        mutate(Mn=month(Datetime),
+               Yr=year(Datetime))
   
   
   #Bronzie    #ACA, missing  gam?? how to present, ask Charlie for his graph....
   Seasonal.bronzie=Seasonal%>%
-    filter(Species=='bronze whaler')%>%
-    mutate(TagCode=as.factor(TagCode))
-  ggplot(Seasonal.bronzie,aes(x=Datetime,y=Dist.frm.rel,col=TagCode))+
+    filter(Species=='bronze whaler')
+  Sisonls.bronzie=c(31003,31000,30894,29587,29542,27698)
+  Seasonal.bronzie.Mod=Seasonal.bronzie%>%
+                    filter(TagCode%in%Sisonls.bronzie)%>%
+                    mutate(TagCode=as.factor(TagCode))
+  Mod.bronzie=gam(Dist.frm.rel~s(Delta.t,bs='cc')+s(TagCode,bs='re'),data=Seasonal.bronzie.Mod)
+  ggplot(Seasonal.bronzie.Mod,aes(x=Datetime,y=Dist.frm.rel,col=TagCode))+
     geom_line()
-  Mod.bronzie=gam(Dist.frm.rel~s(Delta.t,bs='cc')+s(TagCode,bs='re'),data=Seasonal.bronzie)
   
   #Dusky
   Seasonal.dusky=Seasonal%>%
-    filter(Species=='Dusky')%>%
+    filter(Species=='Dusky')
+  Sisonls.dusky=c(49144,49146)
+  Seasonal.dusky.Mod=Seasonal.dusky%>%
+    filter(TagCode%in%Sisonls.dusky)%>%
     mutate(TagCode=as.factor(TagCode))
   
-  ggplot(Seasonal.dusky,aes(x=Datetime,y=Dist.frm.rel,col=TagCode))+
+  Mod.dusky=gam(Dist.frm.rel~s(Delta.t,bs='cc')+s(TagCode,bs='re'),data=Seasonal.dusky.Mod)
+  ggplot(Seasonal.dusky.Mod,aes(x=Datetime,y=Dist.frm.rel,col=TagCode))+
     geom_line()
-  Mod.dusky=gam(Dist.frm.rel~s(Delta.t,bs='cc')+s(TagCode,bs='re'),data=Seasonal.dusky)
+  
 
 
   
@@ -498,25 +547,39 @@ fun.run.scen=function(Dat,SCEN)
         distinct(TagCode,event,TagCode.Juris,.keep_all = T)%>%
         select(TagCode,Species,Rel.state,Juris,Residency,event,TagCode.Juris)%>%
         filter(!is.na(Residency))%>%
-        data.frame()
+        data.frame()%>%mutate(Event.Juris=paste(event,Juris))
   
-  #ACA MISSING: how to best display residency (should be similar to proportion time...)
-  # tiff(file=paste('figure_residency_',SCEN,'.tiff',sep=''),width=1800,height=2400,units="px",res=300,
-  #      compression="lzw+p")
-  # par(mfcol=c(2,1),mar=c(1,1,1,1.25),oma=c(.1,.1,.1,.5),las=1,
-  #     mgp=c(1.25,.35,0),cex.axis=1.1,cex.lab=1.25,xpd=T)
-  # #bronzie
-  # a=Residency%>%filter(Species=='bronze whaler')%>%
-  #               mutate(Event.Juris=paste(event,Juris))%>%
-  #               select(TagCode,Event.Juris,Residency)%>%
-  #               spread(Event.Juris,Residency)
-  # 
-  # 
-  # dev.off()
+  Prop.time.Res=vector('list',length(unique(Residency$Species)))
+  names(Prop.time.Res)=unique(Residency$Species)
+  for(j in 1:length(Prop.time.Res))
+  {
+    d=Residency%>%filter(Species==names(Prop.time.Res)[j])
+    this=unique(d$TagCode)
+    dummy=vector('list',length(this))
+    names(dummy)=this
+    for(xx in 1:length(dummy))
+    {
+      dummy[[xx]]=d%>%filter(TagCode==names(dummy)[xx])%>%
+        mutate(index=1:length(event),
+               Prop=Residency,
+               Total.days='')%>%
+        select(index,Juris,Total.days,Prop,Rel.state)
+    }
+    Prop.time.Res[[j]]=dummy
+  }
 
- 
-  
-
+  tiff(file=paste('figure_residency_',SCEN,'.tiff',sep=''),width=1800,height=2400,units="px",res=300,
+        compression="lzw+p")
+  par(mfcol=c(2,1),mar=c(1,1,1,1.25),oma=c(.1,.1,.1,.5),las=1,
+      mgp=c(1.25,.35,0),cex.axis=1.1,cex.lab=1.25,xpd=T)
+  for(j in 1:length(Prop.time.Res))
+  {
+    fn.plt.residency(d=Prop.time.Res[[j]],CL1=Cols[1],CL2=Cols[2])
+    if(j==2)legend('bottom',c("WA","SA"),fill=Cols,horiz=T,bty='n')
+    mtext(names(Prop.time.Res)[j],3,cex=1.5)
+  }
+  mtext("Residency",1,line=-2.5,cex=1.5)
+  dev.off()
   
 
   

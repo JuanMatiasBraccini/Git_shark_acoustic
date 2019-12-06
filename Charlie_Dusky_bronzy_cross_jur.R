@@ -163,7 +163,7 @@ Dat=Dat%>%
          Latitude.prev=lag(Latitude,1),
          State.prev=lag(State,1),
          Datetime.prev=as.POSIXct(ifelse(is.na(TagCode.prev)|!TagCode==TagCode.prev,
-                              as.character(ReleaseDate),as.character(Datetime.prev))),
+                              as.character(ReleaseDate),as.character(Datetime.prev)),tz = "UTC"),
          Longitude.prev=ifelse(is.na(TagCode.prev)|!TagCode==TagCode.prev,
                                ReleaseLongitude,Longitude.prev),
          Latitude.prev=ifelse(is.na(TagCode.prev)|!TagCode==TagCode.prev,ReleaseLatitude,Latitude.prev),
@@ -319,6 +319,7 @@ fn.plt.prop.time=function(d,CL1,CL2)
 }
 
 #function for wrapping around scenarios
+library(mgcv)
 fun.run.scen=function(Dat,SCEN)
 {
   #create useful objects
@@ -443,22 +444,89 @@ fun.run.scen=function(Dat,SCEN)
     if(t==2)legend('bottom',c("WA","SA"),fill=Cols,horiz=T,bty='n')
     mtext(names(TAG.species)[t],3,cex=1.5)
   }
-  mtext("Percent of time",1,line=-2.5,cex=1.5)
+  mtext("Percent of time per zone",1,line=-2.5,cex=1.5)
   dev.off()
   
   
-  #seasonal patterns?? plot distance from release thru time  #ACA, missing
+  #seasonal patterns plot distance from release thru time 
+  Seasonal=Dat%>%
+            left_join(subset(Rel.dat,select=c(TagCode,ReleaseDate,
+                                              ReleaseLatitude,ReleaseLongitude)),by='TagCode')%>%
+            arrange(TagCode,Datetime)
+  Seasonal$Dist.frm.rel=ifelse(Seasonal$TagCode==Seasonal$TagCode.prev,
+                           distGeo(Seasonal[,c("ReleaseLongitude","ReleaseLatitude")],
+                                   Seasonal[,c("Longitude","Latitude")])/1000,NA)
+  Seasonal=Seasonal%>%
+        mutate(Delta.t=as.numeric(difftime(Datetime,ReleaseDate)))%>%
+        select(TagCode,TagCode.prev,Species,Datetime,
+                             ReleaseLongitude,ReleaseLatitude,Longitude,
+                             Latitude,Dist.frm.rel,Delta.t)%>%
+        filter(!is.na(Dist.frm.rel))
   
+  
+  #Bronzie    #ACA, missing  gam?? how to present, ask Charlie for his graph....
+  Seasonal.bronzie=Seasonal%>%
+    filter(Species=='bronze whaler')%>%
+    mutate(TagCode=as.factor(TagCode))
+  ggplot(Seasonal.bronzie,aes(x=Datetime,y=Dist.frm.rel,col=TagCode))+
+    geom_line()
+  Mod.bronzie=gam(Dist.frm.rel~s(Delta.t,bs='cc')+s(TagCode,bs='re'),data=Seasonal.bronzie)
+  
+  #Dusky
+  Seasonal.dusky=Seasonal%>%
+    filter(Species=='Dusky')%>%
+    mutate(TagCode=as.factor(TagCode))
+  
+  ggplot(Seasonal.dusky,aes(x=Datetime,y=Dist.frm.rel,col=TagCode))+
+    geom_line()
+  Mod.dusky=gam(Dist.frm.rel~s(Delta.t,bs='cc')+s(TagCode,bs='re'),data=Seasonal.dusky)
+
+
   
   #Residency
+  Residency=Dat%>%
+        arrange(TagCode,Datetime)%>%
+        mutate(event=ifelse(TagCode==TagCode.prev & Same.juris=="NO",1,0),
+               event=ifelse(TagCode==TagCode.prev,cumsum(event),NA),
+               TagCode.Juris=paste(TagCode,Juris,Juris.prev))%>%
+        group_by(TagCode) %>%
+        mutate(Tot.time = difftime(max(Datetime),min(Datetime.prev),units='mins'))%>%   
+        group_by(TagCode,event,TagCode.Juris)%>%
+        mutate(Time.in.zn=ifelse(TagCode==TagCode.prev & Same.juris=="YES",
+                difftime(max(Datetime),min(Datetime.prev),units='mins'),NA))%>%
+        mutate(Residency=Time.in.zn/as.numeric(Tot.time))%>%
+        distinct(TagCode,event,TagCode.Juris,.keep_all = T)%>%
+        select(TagCode,Species,Rel.state,Juris,Residency,event,TagCode.Juris)%>%
+        filter(!is.na(Residency))%>%
+        data.frame()
+  
+  #ACA MISSING: how to best display residency (should be similar to proportion time...)
+  # tiff(file=paste('figure_residency_',SCEN,'.tiff',sep=''),width=1800,height=2400,units="px",res=300,
+  #      compression="lzw+p")
+  # par(mfcol=c(2,1),mar=c(1,1,1,1.25),oma=c(.1,.1,.1,.5),las=1,
+  #     mgp=c(1.25,.35,0),cex.axis=1.1,cex.lab=1.25,xpd=T)
+  # #bronzie
+  # a=Residency%>%filter(Species=='bronze whaler')%>%
+  #               mutate(Event.Juris=paste(event,Juris))%>%
+  #               select(TagCode,Event.Juris,Residency)%>%
+  #               spread(Event.Juris,Residency)
+  # 
+  # 
+  # dev.off()
+
+ 
+  
+
+  
+
   
   
 }
 Cols=c("steelblue","pink2")
 names(Cols)=c("WA","SA")
 
-fun.run.scen(Dat.scen1,"Scen1")
-fun.run.scen(Dat.scen2,"Scen2")
+fun.run.scen(Dat=Dat.scen1,SCEN="Scen1")
+fun.run.scen(Dat=Dat.scen2,SCEN="Scen2")
 
 
 # Conventional tagging----------------------------------------------------------------

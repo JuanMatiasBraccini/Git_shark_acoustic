@@ -193,7 +193,7 @@ Dat = Dat %>%
       mutate(Same.station=ifelse(TagCode==TagCode.prev & 
                                  Longitude==Longitude.prev &
                                  Latitude==Latitude.prev  ,"YES","NO"),
-             Time=ifelse(TagCode==TagCode.prev,(Datetime-Datetime.prev)/60,NA)) %>%   #time in minutes
+             Time=ifelse(TagCode==TagCode.prev,difftime(Datetime,Datetime.prev,units="mins"),NA)) %>%   
       rename(Rel.state=ReleaseState)%>%
       select(c(TagCode,TagCode.prev,Species,Organisation,State,State.prev,
                Datetime,Datetime.prev,Mn,Yr,StationName,Longitude,Longitude.prev,
@@ -348,6 +348,7 @@ fn.plt.residency=function(d,CL1,CL2)
 }
 
 #function for wrapping around scenarios
+Adelaide=c(138.6,-34.928)
 fun.run.scen=function(Dat,SCEN)
 {
   #create useful objects
@@ -443,7 +444,7 @@ fun.run.scen=function(Dat,SCEN)
   Dat$Distance.c=with(Dat,ifelse(TagCode==TagCode.prev,Distance.c/1000,NA)) 
   
   
-  #cross jurisdictional displacements 
+  #Distribution of displacements and ROM across jurisdictions
   Dat= Dat%>% 
     mutate(Juris=ifelse(zone%in%c("WC","Zone1","Zone2"),"WA",
                         ifelse(zone%in%c("SA.east","SA.west"),"SA",NA)),
@@ -452,6 +453,28 @@ fun.run.scen=function(Dat,SCEN)
            Same.juris=ifelse(Juris==Juris.prev,"YES",
                              ifelse(!Juris==Juris.prev,"NO",NA)))
   
+  Cros.jur=Dat%>%filter(Same.juris=="NO")%>%
+    select(Species,TagCode,TagCode.prev,Juris,Juris.prev,
+           Longitude,Latitude,Longitude.prev,Latitude.prev,
+           Datetime,Datetime.prev,Distance.c,Time)%>%
+    mutate(Time=ifelse(is.na(Time),difftime(Datetime,Datetime.prev,units='mins'),Time))
+  
+  Cros.jur$Distance.c=ifelse(is.na(Cros.jur$Distance.c),distGeo(Cros.jur[,c("Longitude.prev","Latitude.prev")],
+                                  Cros.jur[,c("Longitude","Latitude")])/1000,Cros.jur$Distance.c)
+  Cros.jur=Cros.jur%>%mutate(ROM=Distance.c/(Time/(24*60)))  # km/h
+  boxplot(Distance.c~Species,Cros.jur)
+  
+  library(vioplot)
+  library(beanplot)
+  
+  vioplot(Distance.c~Species,Cros.jur, horizontal=TRUE, col="gray")
+  beanplot(Distance.c~Species,Cros.jur, horizontal=TRUE, col="gray")
+  
+  vioplot(ROM~Species,Cros.jur, horizontal=TRUE, col="gray")
+  beanplot(ROM~Species,Cros.jur, horizontal=TRUE, col="gray")
+  
+  
+  #cross jurisdictional displacements
   Prop.time=vector('list',length(TAG))
   names(Prop.time)=TAG
   for(i in 1:length(TAG))
@@ -482,28 +505,44 @@ fun.run.scen=function(Dat,SCEN)
             left_join(subset(Rel.dat,select=c(TagCode,ReleaseDate,
                                               ReleaseLatitude,ReleaseLongitude)),by='TagCode')%>%
             arrange(TagCode,Datetime)%>%
-            mutate(Delta.t=as.numeric(difftime(Datetime,ReleaseDate)))
+            mutate(Delta.t=as.numeric(difftime(Datetime,ReleaseDate)),
+                   AdelaideLon=Adelaide[1],
+                   AdelaideLat=Adelaide[2])
   Seasonal$Dist.frm.rel=ifelse(Seasonal$TagCode==Seasonal$TagCode.prev,
                            distGeo(Seasonal[,c("ReleaseLongitude","ReleaseLatitude")],
                                    Seasonal[,c("Longitude","Latitude")])/1000,NA)
+  Seasonal$Dist.frm.Adld=ifelse(Seasonal$TagCode==Seasonal$TagCode.prev,
+                               distGeo(Seasonal[,c("AdelaideLon","AdelaideLat")],
+                                       Seasonal[,c("Longitude","Latitude")])/1000,NA)
+  
   Add.relis=Seasonal[1:length(unique(Seasonal$TagCode)),]
   Add.relis[,]=NA
-  Add.relis=Add.relis%>%mutate(TagCode=Rel.dat$TagCode,
+  Add.relis=Add.relis%>%
+                mutate(TagCode=Rel.dat$TagCode,
                                TagCode.prev=Rel.dat$TagCode,
                                Datetime=Rel.dat$ReleaseDate,
                                Dist.frm.rel=0,
+                               ReleaseLatitude=Rel.dat$ReleaseLatitude,
+                               ReleaseLongitude=Rel.dat$ReleaseLongitude,
+                               AdelaideLon=Adelaide[1],
+                               AdelaideLat=Adelaide[2],
                                Delta.t=0)%>%
-    select(-Species)%>%
-    left_join(Spics,by='TagCode')%>%
-    select(names(Seasonal))
+                select(-Species)%>%
+                left_join(Spics,by='TagCode')%>%
+                select(names(Seasonal))
+  Add.relis$Dist.frm.Adld=ifelse(Add.relis$TagCode==Add.relis$TagCode.prev,
+                                distGeo(Add.relis[,c("AdelaideLon","AdelaideLat")],
+                                        Add.relis[,c("ReleaseLongitude","ReleaseLatitude")])/1000,NA)
   
   Seasonal=rbind(Seasonal,Add.relis)%>%
         arrange(TagCode,Delta.t)%>%
         select(TagCode,TagCode.prev,Species,Datetime,
-                             Dist.frm.rel,Delta.t)%>%
+                             Dist.frm.rel,Dist.frm.Adld,Delta.t)%>%
         filter(!is.na(Dist.frm.rel))%>%
         mutate(Mn=month(Datetime),
-               Yr=year(Datetime))
+               Yr=year(Datetime),
+               ln.Dist.frm.rel=log(Dist.frm.rel+1e-4),
+               ln.Dist.frm.Adld=log(Dist.frm.Adld))
   
   
   #Bronzie    #ACA, missing  gam?? how to present, ask Charlie for his graph....
@@ -513,9 +552,14 @@ fun.run.scen=function(Dat,SCEN)
   Seasonal.bronzie.Mod=Seasonal.bronzie%>%
                     filter(TagCode%in%Sisonls.bronzie)%>%
                     mutate(TagCode=as.factor(TagCode))
-  Mod.bronzie=gam(Dist.frm.rel~s(Delta.t,bs='cc')+s(TagCode,bs='re'),data=Seasonal.bronzie.Mod)
-  ggplot(Seasonal.bronzie.Mod,aes(x=Datetime,y=Dist.frm.rel,col=TagCode))+
+  Mod.bronzie=gam(ln.Dist.frm.Adld~s(Delta.t,bs='cc')+s(TagCode,bs='re'),data=Seasonal.bronzie.Mod)
+  ggplot(Seasonal.bronzie.Mod,aes(x=Delta.t,y=ln.Dist.frm.Adld,col=TagCode))+
     geom_line()
+  
+  Mod.bronzie=gam(ln.Dist.frm.Adld~s(Mn,bs='cc')+s(TagCode,bs='re'),data=Seasonal.bronzie.Mod)
+  ggplot(Seasonal.bronzie.Mod,aes(x=Mn,y=ln.Dist.frm.Adld,col=TagCode))+
+    geom_line()
+  
   
   #Dusky
   Seasonal.dusky=Seasonal%>%
@@ -525,8 +569,11 @@ fun.run.scen=function(Dat,SCEN)
     filter(TagCode%in%Sisonls.dusky)%>%
     mutate(TagCode=as.factor(TagCode))
   
-  Mod.dusky=gam(Dist.frm.rel~s(Delta.t,bs='cc')+s(TagCode,bs='re'),data=Seasonal.dusky.Mod)
-  ggplot(Seasonal.dusky.Mod,aes(x=Datetime,y=Dist.frm.rel,col=TagCode))+
+  Mod.dusky=gam(ln.Dist.frm.Adld~s(Delta.t,bs='cc')+s(TagCode,bs='re'),data=Seasonal.dusky.Mod)
+  ggplot(Seasonal.dusky.Mod,aes(x=Delta.t,y=ln.Dist.frm.Adld,col=TagCode))+
+    geom_line()
+ # Mod.dusky=gam(ln.Dist.frm.Adld~s(Mn,bs='cc')+s(TagCode,bs='re'),data=Seasonal.dusky.Mod)
+  ggplot(Seasonal.dusky.Mod,aes(x=Delta.t,y=ln.Dist.frm.Adld,col=TagCode))+
     geom_line()
   
 

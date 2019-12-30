@@ -6,8 +6,7 @@
 #to do:
     # map release location and trajectories (showing where detected). Can do trajectories with progressive
     #       shades of grey to show initial and most recent...
-    # seasonal patterns: time line with X axis (julian day) and Y axis showing distance
-    #                    from release location for each shark...(by species)
+    # seasonal patterns: GAM or  Fast fourier transformation 
 
 
    # Connectivity plots circus.trackPlotRgiong()" from 'circlize' package)??
@@ -23,7 +22,8 @@ library(geosphere)
 library(chron) 
 library(mgcv)
 library(mgcViz)
-
+library(vioplot)
+library(beanplot)
 
 options(stringsAsFactors = FALSE)
 
@@ -223,12 +223,18 @@ write.csv(Tab1,'Tab.tag.code_species_org_state.csv',row.names = F)
 
 
 #Run data set scenarios-------------------------------------------------------
+#Scen1: full data set
+#Scen2: only state
+#Scen3: only IMOS
 Dat=Dat%>%mutate(Station.type=
-                   ifelse(is.na(Station.type) & Longitude<115.626 & Latitude<(-31),
+                   ifelse(is.na(Station.type) & Longitude<115.626 & 
+                            Latitude<(-31) & Latitude>(-32.28),
                           "IMOS",
-                   ifelse(is.na(Station.type) & Longitude>116,"DoF",Station.type)))
+                   ifelse(is.na(Station.type) & Longitude>116 & Longitude<=129,
+                          "DoF",Station.type)))
 Dat.scen1=Dat
 Dat.scen2=subset(Dat, is.na(Station.type) | Station.type%in%c("DoF","Flinders"))
+Dat.scen3=subset(Dat, Station.type%in%'IMOS')
 
 #proportion of time per jurisdiction (straight line movement assumption)
 fn.prop.time.jur=function(d)  
@@ -347,7 +353,22 @@ fn.plt.residency=function(d,CL1,CL2)
   }
 }
 
-#function for wrapping around scenarios
+#functions for plotting seasonality
+fn.ggplot=function(dd,Y,X,Y.lab,X.lab)
+{
+  p=ggplot(dd,aes_string(y=Y,x=X,col='TagCode'))+
+    geom_line()+geom_point()+scale_y_reverse()+
+    labs(y = Y.lab,x = X.lab)
+  if(X=='Mn')
+  {
+    p=p+scale_x_continuous(breaks = seq(1,12,2),
+                         label = month.abb[seq(1,12,2)])
+  }
+  p
+}
+
+
+#function for wrapping scenarios
 Adelaide=c(138.6,-34.928)
 fun.run.scen=function(Dat,SCEN)
 {
@@ -389,52 +410,52 @@ fun.run.scen=function(Dat,SCEN)
                         distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Eyre)+
                           Eyre_SA.Border+
                           distGeo(SA.Border,Dat[,c("Longitude","Latitude")]),
-                        ifelse(Dat$zone.prev=='SA.east' & Dat$zone=='Zone1' &
+                  ifelse(Dat$zone.prev=='SA.east' & Dat$zone=='Zone1' &
                                  Dat$Longitude>= Cape.Leuwin[1] & Dat$Latitude<= Cape.Leuwin[2],
                                distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Eyre)+
                                  Eyre_SA.Border+SA.Border_Mid.point+
                                  distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),   
-                               ifelse(Dat$zone.prev=='SA.east' & Dat$zone%in%c('Zone1','WC') & 
+                  ifelse(Dat$zone.prev=='SA.east' & Dat$zone%in%c('Zone1','WC') & 
                                         Dat$Latitude>Cape.Leuwin[2],
                                       distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Eyre)+
                                         Eyre_SA.Border+SA.Border_Mid.point+Mid.point_Cape.Leuwin+
                                         distGeo(Cape.Leuwin,Dat[,c("Longitude","Latitude")]), 
                                       
-                                      ifelse(Dat$zone.prev=='Zone2' & Dat$zone=='SA.east',
+                  ifelse(Dat$zone.prev=='Zone2' & Dat$zone=='SA.east',
                                              distGeo(Dat[,c("Longitude.prev","Latitude.prev")],SA.Border)+
                                                Eyre_SA.Border+
                                                distGeo(Eyre,Dat[,c("Longitude","Latitude")]),   
-                                             ifelse(Dat$zone.prev=='Zone2' & Dat$zone=='Zone1' &
+                  ifelse(Dat$zone.prev=='Zone2' & Dat$zone=='Zone1' &
                                                       Dat$Longitude>= Cape.Leuwin[1] & Dat$Latitude<= Cape.Leuwin[2],
                                                     distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
                                                       distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),
-                                                    ifelse(Dat$zone.prev=='Zone2' & Dat$zone%in%c('Zone1','WC') & 
+                  ifelse(Dat$zone.prev=='Zone2' & Dat$zone%in%c('Zone1','WC') & 
                                                              Dat$Latitude>Cape.Leuwin[2],
                                                            distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
                                                              Mid.point_Cape.Leuwin+
                                                              distGeo(Cape.Leuwin,Dat[,c("Longitude","Latitude")]),
                                                            
-                                                           ifelse(Dat$zone.prev%in%c('Zone1','WC') & Dat$zone=='SA.east' & 
+                  ifelse(Dat$zone.prev%in%c('Zone1','WC') & Dat$zone=='SA.east' & 
                                                                     Dat$Latitude.prev> Cape.Leuwin[2],
                                                                   distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Cape.Leuwin)+
                                                                     Mid.point_Cape.Leuwin+SA.Border_Mid.point+Eyre_SA.Border+
                                                                     distGeo(Eyre,Dat[,c("Longitude","Latitude")]), 
-                                                                  ifelse(Dat$zone.prev%in%c('Zone1') & Dat$zone=='SA.east' & 
+                  ifelse(Dat$zone.prev%in%c('Zone1') & Dat$zone=='SA.east' & 
                                                                            Dat$Latitude.prev<= Cape.Leuwin[2],
                                                                          distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
                                                                            SA.Border_Mid.point+Eyre_SA.Border+
                                                                            distGeo(Eyre,Dat[,c("Longitude","Latitude")]), 
                                                                          
-                                                                         ifelse(Dat$zone.prev%in%c('Zone1','WC') & Dat$zone=='Zone2' &
+                  ifelse(Dat$zone.prev%in%c('Zone1','WC') & Dat$zone=='Zone2' &
                                                                                   Dat$Longitude< Cape.Leuwin[1] & Dat$Latitude> Cape.Leuwin[2],
                                                                                 distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Cape.Leuwin)+
                                                                                   Mid.point_Cape.Leuwin+
                                                                                   distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),
-                                                                                ifelse(Dat$zone.prev%in%c('Zone1') & Dat$zone=='Zone2' &
+                  ifelse(Dat$zone.prev%in%c('Zone1') & Dat$zone=='Zone2' &
                                                                                          Dat$Longitude>= Cape.Leuwin[1] & Dat$Latitude<= Cape.Leuwin[2],
                                                                                        distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
                                                                                          distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),
-                                                                                       ifelse(Dat$zone.prev%in%c('Zone1','WC') & Dat$zone=='Zone1' &
+                  ifelse(Dat$zone.prev%in%c('Zone1','WC') & Dat$zone=='Zone1' &
                                                                                                 Dat$Longitude< Cape.Leuwin[1] & Dat$Latitude> Cape.Leuwin[2],
                                                                                               distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Cape.Leuwin)+
                                                                                                 distGeo(Cape.Leuwin,Dat[,c("Longitude","Latitude")]),
@@ -462,16 +483,24 @@ fun.run.scen=function(Dat,SCEN)
   Cros.jur$Distance.c=ifelse(is.na(Cros.jur$Distance.c),distGeo(Cros.jur[,c("Longitude.prev","Latitude.prev")],
                                   Cros.jur[,c("Longitude","Latitude")])/1000,Cros.jur$Distance.c)
   Cros.jur=Cros.jur%>%mutate(ROM=Distance.c/(Time/(24*60)))  # km/h
-  boxplot(Distance.c~Species,Cros.jur)
   
-  library(vioplot)
-  library(beanplot)
+  tiff(file=paste('displacement and ROM/figure_Cross.juris_displ.ROM.hist_',SCEN,'.tiff',sep=''),width=2400,height=1800,units="px",res=300,
+       compression="lzw+p")
+  par(mfrow=c(2,3),mar=c(1,2,1,2),oma=c(2,2,.1,.5),las=1,
+      mgp=c(1.5,.35,0),cex.axis=1.1,cex.lab=1.25,xpd=T)
   
-  vioplot(Distance.c~Species,Cros.jur, horizontal=TRUE, col="gray")
-  beanplot(Distance.c~Species,Cros.jur, horizontal=TRUE, col="gray")
+    #distance
+  boxplot(Distance.c~Species,Cros.jur,ylab='')
+  mtext("Distance (km)",2,line=2.5,las=3)
+  vioplot(Distance.c~Species,Cros.jur, horizontal=F, col="gray",ylab='')
+  beanplot(Distance.c~Species,Cros.jur, horizontal=F, col="gray",ylab='')
   
-  vioplot(ROM~Species,Cros.jur, horizontal=TRUE, col="gray")
-  beanplot(ROM~Species,Cros.jur, horizontal=TRUE, col="gray")
+    #ROM
+  boxplot(ROM~Species,Cros.jur,ylab='')
+  mtext("ROM (km/hour)",2,line=2.5,las=3)
+  vioplot(ROM~Species,Cros.jur, horizontal=F, col="gray",ylab='')
+  beanplot(ROM~Species,Cros.jur, horizontal=F, col="gray",ylab='')
+  dev.off()
   
   
   #cross jurisdictional displacements
@@ -505,7 +534,7 @@ fun.run.scen=function(Dat,SCEN)
             left_join(subset(Rel.dat,select=c(TagCode,ReleaseDate,
                                               ReleaseLatitude,ReleaseLongitude)),by='TagCode')%>%
             arrange(TagCode,Datetime)%>%
-            mutate(Delta.t=as.numeric(difftime(Datetime,ReleaseDate)),
+            mutate(Delta.t=as.numeric(difftime(Datetime,ReleaseDate,units='days')),
                    AdelaideLon=Adelaide[1],
                    AdelaideLat=Adelaide[2])
   Seasonal$Dist.frm.rel=ifelse(Seasonal$TagCode==Seasonal$TagCode.prev,
@@ -515,15 +544,16 @@ fun.run.scen=function(Dat,SCEN)
                                distGeo(Seasonal[,c("AdelaideLon","AdelaideLat")],
                                        Seasonal[,c("Longitude","Latitude")])/1000,NA)
   
+  Ril.dt=subset(Rel.dat,TagCode%in%unique(Seasonal$TagCode))
   Add.relis=Seasonal[1:length(unique(Seasonal$TagCode)),]
   Add.relis[,]=NA
   Add.relis=Add.relis%>%
-                mutate(TagCode=Rel.dat$TagCode,
-                               TagCode.prev=Rel.dat$TagCode,
-                               Datetime=Rel.dat$ReleaseDate,
+                mutate(TagCode=Ril.dt$TagCode,
+                               TagCode.prev=Ril.dt$TagCode,
+                               Datetime=Ril.dt$ReleaseDate,
                                Dist.frm.rel=0,
-                               ReleaseLatitude=Rel.dat$ReleaseLatitude,
-                               ReleaseLongitude=Rel.dat$ReleaseLongitude,
+                               ReleaseLatitude=Ril.dt$ReleaseLatitude,
+                               ReleaseLongitude=Ril.dt$ReleaseLongitude,
                                AdelaideLon=Adelaide[1],
                                AdelaideLat=Adelaide[2],
                                Delta.t=0)%>%
@@ -542,23 +572,41 @@ fun.run.scen=function(Dat,SCEN)
         mutate(Mn=month(Datetime),
                Yr=year(Datetime),
                ln.Dist.frm.rel=log(Dist.frm.rel+1e-4),
-               ln.Dist.frm.Adld=log(Dist.frm.Adld))
+               ln.Dist.frm.Adld=log(Dist.frm.Adld),
+               scaled.Dist.frm.Adld=scale(Dist.frm.Adld))
   
-  
-  #Bronzie    #ACA, missing  gam?? how to present, ask Charlie for his graph....
+  #ACA, missing  gam?? how to present, ask Charlie for his graph....
+  #Bronzie    
   Seasonal.bronzie=Seasonal%>%
     filter(Species=='bronze whaler')
   Sisonls.bronzie=c(31003,31000,30894,29587,29542,27698)
   Seasonal.bronzie.Mod=Seasonal.bronzie%>%
                     filter(TagCode%in%Sisonls.bronzie)%>%
-                    mutate(TagCode=as.factor(TagCode))
-  Mod.bronzie=gam(ln.Dist.frm.Adld~s(Delta.t,bs='cc')+s(TagCode,bs='re'),data=Seasonal.bronzie.Mod)
-  ggplot(Seasonal.bronzie.Mod,aes(x=Delta.t,y=ln.Dist.frm.Adld,col=TagCode))+
-    geom_line()
+                    mutate(TagCode=as.factor(TagCode))%>%
+                    arrange(TagCode,Datetime)
+
+  fn.ggplot(dd=Seasonal.bronzie.Mod,
+            Y='Dist.frm.Adld',
+            X='Mn',
+            Y.lab="Distance from Adelaide (km)",
+            X.lab="Month")
   
-  Mod.bronzie=gam(ln.Dist.frm.Adld~s(Mn,bs='cc')+s(TagCode,bs='re'),data=Seasonal.bronzie.Mod)
-  ggplot(Seasonal.bronzie.Mod,aes(x=Mn,y=ln.Dist.frm.Adld,col=TagCode))+
-    geom_line()
+  fn.ggplot(dd=Seasonal.bronzie.Mod,
+            Y='Dist.frm.Adld',
+            X='Delta.t',
+            Y.lab="Distance from Adelaide (km)",
+            X.lab="Delta.t")
+  
+
+  
+  Mod.bronzie=gam(ln.Dist.frm.Adld~s(Delta.t,bs='cc')+s(TagCode,bs='re'),data=Seasonal.bronzie.Mod)
+  Mod.bronzie=gam(ln.Dist.frm.Adld~s(Mn,bs='cc', k = 12)+s(TagCode,bs='re'),data=Seasonal.bronzie.Mod)
+  
+  newd=data.frame(Mn=seq(1,12,length.out=100),TagCode=)
+  pred <- predict.gam(Mod.bronzie,newd,type = "response", se.fit = TRUE)
+  plot(newd$Mn,exp(pred$fit))
+  segments(newd$Mn,exp(pred$fit+1.96*pred$se.fit),
+         newd$Mn,exp(pred$fit-1.96*pred$se.fit))
   
   
   #Dusky
@@ -567,8 +615,22 @@ fun.run.scen=function(Dat,SCEN)
   Sisonls.dusky=c(49144,49146)
   Seasonal.dusky.Mod=Seasonal.dusky%>%
     filter(TagCode%in%Sisonls.dusky)%>%
-    mutate(TagCode=as.factor(TagCode))
+    mutate(TagCode=as.factor(TagCode))%>%
+    arrange(TagCode,Datetime)
   
+  fn.ggplot(dd=Seasonal.dusky.Mod,
+            Y='Dist.frm.Adld',
+            X='Mn',
+            Y.lab="Distance from Adelaide (km)",
+            X.lab="Month")
+  
+  fn.ggplot(dd=Seasonal.dusky.Mod,
+            Y='Dist.frm.Adld',
+            X='Delta.t',
+            Y.lab="Distance from Adelaide (km)",
+            X.lab="Delta.t")
+  
+
   Mod.dusky=gam(ln.Dist.frm.Adld~s(Delta.t,bs='cc')+s(TagCode,bs='re'),data=Seasonal.dusky.Mod)
   ggplot(Seasonal.dusky.Mod,aes(x=Delta.t,y=ln.Dist.frm.Adld,col=TagCode))+
     geom_line()
@@ -577,8 +639,6 @@ fun.run.scen=function(Dat,SCEN)
     geom_line()
   
 
-
-  
   #Residency
   Residency=Dat%>%
         arrange(TagCode,Datetime)%>%
@@ -628,15 +688,13 @@ fun.run.scen=function(Dat,SCEN)
   mtext("Residency",1,line=-2.5,cex=1.5)
   dev.off()
   
-
-  
-  
 }
 Cols=c("steelblue","pink2")
 names(Cols)=c("WA","SA")
 
 fun.run.scen(Dat=Dat.scen1,SCEN="Scen1")
 fun.run.scen(Dat=Dat.scen2,SCEN="Scen2")
+fun.run.scen(Dat=Dat.scen3,SCEN="Scen3")
 
 
 # Conventional tagging----------------------------------------------------------------

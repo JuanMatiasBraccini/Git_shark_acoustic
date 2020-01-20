@@ -6,14 +6,7 @@
 #to do:
     # map release location and trajectories (showing where detected). Can do trajectories with progressive
     #       shades of grey to show initial and most recent...
-    # seasonal patterns: GAM or  Fast fourier transformation 
-
-
-   # Connectivity plots circus.trackPlotRgiong()" from 'circlize' package)??
-  #         ...but this needs the total number of tagged sharks
-
-
-
+    # seasonal patterns: GAM 
 
 rm(list=ls(all=TRUE))
 library(lubridate)
@@ -234,7 +227,7 @@ Dat=Dat%>%mutate(Station.type=
                           "DoF",Station.type)))
 Dat.scen1=Dat
 Dat.scen2=subset(Dat, is.na(Station.type) | Station.type%in%c("DoF","Flinders"))
-Dat.scen3=subset(Dat, Station.type%in%'IMOS')
+#Dat.scen3=subset(Dat, Station.type%in%'IMOS')
 
 #proportion of time per jurisdiction (straight line movement assumption)
 fn.prop.time.jur=function(d)  
@@ -367,7 +360,7 @@ fn.ggplot=function(dd,Y,X,Y.lab,X.lab)
   p
 }
 
-
+#ACA, missing  gam?? how to present, ask Charlie for his graph....
 #function for wrapping scenarios
 Adelaide=c(138.6,-34.928)
 fun.run.scen=function(Dat,SCEN)
@@ -411,55 +404,55 @@ fun.run.scen=function(Dat,SCEN)
                           Eyre_SA.Border+
                           distGeo(SA.Border,Dat[,c("Longitude","Latitude")]),
                   ifelse(Dat$zone.prev=='SA.east' & Dat$zone=='Zone1' &
-                                 Dat$Longitude>= Cape.Leuwin[1] & Dat$Latitude<= Cape.Leuwin[2],
-                               distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Eyre)+
-                                 Eyre_SA.Border+SA.Border_Mid.point+
-                                 distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),   
+                          Dat$Longitude>= Cape.Leuwin[1] & Dat$Latitude<= Cape.Leuwin[2],
+                          distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Eyre)+
+                          Eyre_SA.Border+SA.Border_Mid.point+
+                          distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),   
                   ifelse(Dat$zone.prev=='SA.east' & Dat$zone%in%c('Zone1','WC') & 
-                                        Dat$Latitude>Cape.Leuwin[2],
-                                      distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Eyre)+
-                                        Eyre_SA.Border+SA.Border_Mid.point+Mid.point_Cape.Leuwin+
-                                        distGeo(Cape.Leuwin,Dat[,c("Longitude","Latitude")]), 
+                          Dat$Latitude>Cape.Leuwin[2],
+                          distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Eyre)+
+                          Eyre_SA.Border+SA.Border_Mid.point+Mid.point_Cape.Leuwin+
+                          distGeo(Cape.Leuwin,Dat[,c("Longitude","Latitude")]), 
                                       
                   ifelse(Dat$zone.prev=='Zone2' & Dat$zone=='SA.east',
-                                             distGeo(Dat[,c("Longitude.prev","Latitude.prev")],SA.Border)+
-                                               Eyre_SA.Border+
-                                               distGeo(Eyre,Dat[,c("Longitude","Latitude")]),   
+                          distGeo(Dat[,c("Longitude.prev","Latitude.prev")],SA.Border)+
+                          Eyre_SA.Border+
+                          distGeo(Eyre,Dat[,c("Longitude","Latitude")]),   
                   ifelse(Dat$zone.prev=='Zone2' & Dat$zone=='Zone1' &
-                                                      Dat$Longitude>= Cape.Leuwin[1] & Dat$Latitude<= Cape.Leuwin[2],
-                                                    distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
-                                                      distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),
+                          Dat$Longitude>= Cape.Leuwin[1] & Dat$Latitude<= Cape.Leuwin[2],
+                          distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
+                          distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),
                   ifelse(Dat$zone.prev=='Zone2' & Dat$zone%in%c('Zone1','WC') & 
-                                                             Dat$Latitude>Cape.Leuwin[2],
-                                                           distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
-                                                             Mid.point_Cape.Leuwin+
-                                                             distGeo(Cape.Leuwin,Dat[,c("Longitude","Latitude")]),
+                          Dat$Latitude>Cape.Leuwin[2],
+                          distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
+                          Mid.point_Cape.Leuwin+
+                          distGeo(Cape.Leuwin,Dat[,c("Longitude","Latitude")]),
                                                            
                   ifelse(Dat$zone.prev%in%c('Zone1','WC') & Dat$zone=='SA.east' & 
-                                                                    Dat$Latitude.prev> Cape.Leuwin[2],
-                                                                  distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Cape.Leuwin)+
-                                                                    Mid.point_Cape.Leuwin+SA.Border_Mid.point+Eyre_SA.Border+
-                                                                    distGeo(Eyre,Dat[,c("Longitude","Latitude")]), 
+                          Dat$Latitude.prev> Cape.Leuwin[2],
+                          distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Cape.Leuwin)+
+                          Mid.point_Cape.Leuwin+SA.Border_Mid.point+Eyre_SA.Border+
+                          distGeo(Eyre,Dat[,c("Longitude","Latitude")]), 
                   ifelse(Dat$zone.prev%in%c('Zone1') & Dat$zone=='SA.east' & 
-                                                                           Dat$Latitude.prev<= Cape.Leuwin[2],
-                                                                         distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
-                                                                           SA.Border_Mid.point+Eyre_SA.Border+
-                                                                           distGeo(Eyre,Dat[,c("Longitude","Latitude")]), 
-                                                                         
+                          Dat$Latitude.prev<= Cape.Leuwin[2],
+                          distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
+                          SA.Border_Mid.point+Eyre_SA.Border+
+                          distGeo(Eyre,Dat[,c("Longitude","Latitude")]), 
+                                                                       
                   ifelse(Dat$zone.prev%in%c('Zone1','WC') & Dat$zone=='Zone2' &
-                                                                                  Dat$Longitude< Cape.Leuwin[1] & Dat$Latitude> Cape.Leuwin[2],
-                                                                                distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Cape.Leuwin)+
-                                                                                  Mid.point_Cape.Leuwin+
-                                                                                  distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),
+                          Dat$Longitude< Cape.Leuwin[1] & Dat$Latitude> Cape.Leuwin[2],
+                          distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Cape.Leuwin)+
+                          Mid.point_Cape.Leuwin+
+                          distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),
                   ifelse(Dat$zone.prev%in%c('Zone1') & Dat$zone=='Zone2' &
-                                                                                         Dat$Longitude>= Cape.Leuwin[1] & Dat$Latitude<= Cape.Leuwin[2],
-                                                                                       distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
-                                                                                         distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),
+                          Dat$Longitude>= Cape.Leuwin[1] & Dat$Latitude<= Cape.Leuwin[2],
+                          distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Mid.point)+
+                          distGeo(Mid.point,Dat[,c("Longitude","Latitude")]),
                   ifelse(Dat$zone.prev%in%c('Zone1','WC') & Dat$zone=='Zone1' &
-                                                                                                Dat$Longitude< Cape.Leuwin[1] & Dat$Latitude> Cape.Leuwin[2],
-                                                                                              distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Cape.Leuwin)+
-                                                                                                distGeo(Cape.Leuwin,Dat[,c("Longitude","Latitude")]),
-                                                                                              Dat$Distance.c)))))))))))
+                          Dat$Longitude< Cape.Leuwin[1] & Dat$Latitude> Cape.Leuwin[2],
+                          distGeo(Dat[,c("Longitude.prev","Latitude.prev")],Cape.Leuwin)+
+                          distGeo(Cape.Leuwin,Dat[,c("Longitude","Latitude")]),
+                          Dat$Distance.c)))))))))))
   
   Dat$Distance=with(Dat,ifelse(TagCode==TagCode.prev,Distance/1000,NA)) 
   Dat$Distance.c=with(Dat,ifelse(TagCode==TagCode.prev,Distance.c/1000,NA)) 
@@ -482,25 +475,27 @@ fun.run.scen=function(Dat,SCEN)
   
   Cros.jur$Distance.c=ifelse(is.na(Cros.jur$Distance.c),distGeo(Cros.jur[,c("Longitude.prev","Latitude.prev")],
                                   Cros.jur[,c("Longitude","Latitude")])/1000,Cros.jur$Distance.c)
-  Cros.jur=Cros.jur%>%mutate(ROM=Distance.c/(Time/(24*60)))  # km/h
+  Cros.jur=Cros.jur%>%mutate(ROM=Distance.c/(Time/(24*60)))  # km/day
   
-  tiff(file=paste('displacement and ROM/figure_Cross.juris_displ.ROM.hist_',SCEN,'.tiff',sep=''),width=2400,height=1800,units="px",res=300,
-       compression="lzw+p")
-  par(mfrow=c(2,3),mar=c(1,2,1,2),oma=c(2,2,.1,.5),las=1,
-      mgp=c(1.5,.35,0),cex.axis=1.1,cex.lab=1.25,xpd=T)
+  tiff(file=paste('displacement and ROM/Cross.juris_hist_figure_',SCEN,'.tiff',sep=''),
+       width=2400,height=2400,units="px",res=300,compression="lzw+p")
+  par(mfrow=c(2,1),mar=c(1,2,1,.1),oma=c(.5,3,.1,.5),las=1,
+      mgp=c(2,.5,0),cex.axis=1.25,cex.lab=1.5,xpd=T)
   
     #distance
-  boxplot(Distance.c~Species,Cros.jur,ylab='')
-  mtext("Distance (km)",2,line=2.5,las=3)
-  vioplot(Distance.c~Species,Cros.jur, horizontal=F, col="gray",ylab='')
-  beanplot(Distance.c~Species,Cros.jur, horizontal=F, col="gray",ylab='')
-  
+   vioplot(Distance.c~Species,Cros.jur, horizontal=F, col="gray",ylab='')
+  mtext("Distance (km)",2,line=3.25,las=3,cex=1.75)
+
     #ROM
-  boxplot(ROM~Species,Cros.jur,ylab='')
-  mtext("ROM (km/hour)",2,line=2.5,las=3)
   vioplot(ROM~Species,Cros.jur, horizontal=F, col="gray",ylab='')
-  beanplot(ROM~Species,Cros.jur, horizontal=F, col="gray",ylab='')
+  mtext("ROM (km/day)",2,line=3.25,las=3,cex=1.75)
   dev.off()
+  
+  ROM.sumery=tapply(Cros.jur$ROM, Cros.jur$Species, summary)
+  Dist.sumery=tapply(Cros.jur$Distance.c, Cros.jur$Species, summary)
+  Tab2<-rbind(do.call(rbind,Dist.sumery),do.call(rbind,ROM.sumery))
+  rownames(Tab2)=paste(c(rep('Distance',2),rep('ROM',2)),rownames(Tab2),sep='_')
+  write.csv(Tab2,paste('displacement and ROM/Cross.juris_summary_',SCEN,'.csv',sep=''))
   
   
   #cross jurisdictional displacements
@@ -575,7 +570,6 @@ fun.run.scen=function(Dat,SCEN)
                ln.Dist.frm.Adld=log(Dist.frm.Adld),
                scaled.Dist.frm.Adld=scale(Dist.frm.Adld))
   
-  #ACA, missing  gam?? how to present, ask Charlie for his graph....
   #Bronzie    
   Seasonal.bronzie=Seasonal%>%
     filter(Species=='bronze whaler')
@@ -694,7 +688,7 @@ names(Cols)=c("WA","SA")
 
 fun.run.scen(Dat=Dat.scen1,SCEN="Scen1")
 fun.run.scen(Dat=Dat.scen2,SCEN="Scen2")
-fun.run.scen(Dat=Dat.scen3,SCEN="Scen3")
+#fun.run.scen(Dat=Dat.scen3,SCEN="Scen3")
 
 
 # Conventional tagging----------------------------------------------------------------

@@ -4,8 +4,9 @@
 #      move across in perspective...
 
 #to do:
-    # map release location and trajectories (showing where detected). Can do trajectories with progressive
-    #       shades of grey to show initial and most recent...
+    # map release location and trajectories (showing where detected). 
+    #       Can do trajectories with progressive shades of grey to show initial 
+    #       and most recent...
     # seasonal patterns: GAM 
 
 rm(list=ls(all=TRUE))
@@ -17,6 +18,7 @@ library(mgcv)
 library(mgcViz)
 library(vioplot)
 library(beanplot)
+library(PBSmapping)
 
 options(stringsAsFactors = FALSE)
 
@@ -52,6 +54,9 @@ Eyre_SA.Border=distGeo(Eyre,SA.Border)
 SA.Border_Mid.point=distGeo(SA.Border,Mid.point)
 Mid.point_Cape.Leuwin=distGeo(Mid.point,Cape.Leuwin)
 
+ #Spatial reference
+Adelaide=c(138.6,-34.928)
+
 #3. Procedure Section----------------------------------------------------
 
 #3.1 initial data manipulation
@@ -67,12 +72,15 @@ DATA.SMN$Time.local=times(format(DATA.SMN$Datetime, "%H:%M:%S"))
 DATA.SMN$n=grepl("20",DATA.SMN$ReleaseDate)
 DATA.SMN$n=with(DATA.SMN,ifelse(n=="FALSE","%d-%B-%y",ifelse(n=="TRUE","%d-%B-%Y",NA)))
 DATA.SMN$ReleaseDate=as.POSIXlt(DATA.SMN$ReleaseDate,format=DATA.SMN$n,tz="UTC")
-DATA.SMN=DATA.SMN%>%select(-n)  
+DATA.SMN=DATA.SMN%>%
+  dplyr::select(-n)  
 
 #Charlie's file  
-Dat_no.name=subset(Dat,StationName=="") %>% select(-StationName)
+Dat_no.name=subset(Dat,StationName=="")%>%
+            dplyr::select(-StationName)
 Dat_no.name=left_join(Dat_no.name,Blank_LatLong,by="ReceiverSerialNumber")
-Dat=subset(Dat,!StationName=="") %>% select(names(Dat_no.name))
+Dat=subset(Dat,!StationName=="")%>%
+            dplyr::select(names(Dat_no.name))
 Dat=rbind(Dat,Dat_no.name)
 Dat = left_join(Dat,SA.receivers,by=c("StationName" = "Location.name")) %>%
       mutate(Datetime=as.POSIXct(Datetime..WST.,format="%d/%m/%Y %H:%M",tz="UTC"),
@@ -131,7 +139,7 @@ Dat=rbind(Dat,dummy)
 DATA.SMN$ReleaseDate=paste(DATA.SMN$ReleaseDate,"00:01")
 Rel.dat=DATA.SMN%>%
               distinct(TagCode,.keep_all = TRUE)%>%
-              select(TagCode,ReleaseDate,ReleaseLatitude,ReleaseLongitude)%>%
+       dplyr::select(TagCode,ReleaseDate,ReleaseLatitude,ReleaseLongitude)%>%
               mutate(ReleaseState=ifelse(ReleaseLongitude>129,'SA','WA'))
                    
 #add missing SA release data                          
@@ -188,7 +196,7 @@ Dat = Dat %>%
                                  Latitude==Latitude.prev  ,"YES","NO"),
              Time=ifelse(TagCode==TagCode.prev,difftime(Datetime,Datetime.prev,units="mins"),NA)) %>%   
       rename(Rel.state=ReleaseState)%>%
-      select(c(TagCode,TagCode.prev,Species,Organisation,State,State.prev,
+  dplyr::select(c(TagCode,TagCode.prev,Species,Organisation,State,State.prev,
                Datetime,Datetime.prev,Mn,Yr,StationName,Longitude,Longitude.prev,
                Latitude,Latitude.prev,Same.station,zone,zone.prev,Time,N,Rel.state,Station.type))
       
@@ -211,8 +219,7 @@ setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie\\Results')
 Tab1= group_by(Dat, TagCode, Species,Organisation,State) %>%
   summarise(sum = sum(N)) %>%
   as.data.frame()
-write.csv(Tab1,'Tab.tag.code_species_org_state.csv',row.names = F)
-
+write.csv(Tab1,'Table.1_Number.detections.by.tag.and.organisation.csv',row.names = F)
 
 
 #Run data set scenarios-------------------------------------------------------
@@ -238,7 +245,8 @@ fn.prop.time.jur=function(d)
                      zone=d$zone.prev[1],
                      Juris=d$Juris.prev[1],
                      Rel.state=d$Rel.state[1]),
-          d%>%select(Datetime,Longitude,Latitude,zone,Juris,Rel.state))
+          d%>%
+        dplyr::select(Datetime,Longitude,Latitude,zone,Juris,Rel.state))
   delta.t=max(d$Datetime)-min(d$Datetime)
   Rel.state=unique(d$Rel.state)
   d=d %>% mutate(date=date(Datetime)) %>%
@@ -360,12 +368,48 @@ fn.ggplot=function(dd,Y,X,Y.lab,X.lab)
   p
 }
 
-#ACA, missing  gam?? how to present, ask Charlie for his graph....
-#function for wrapping scenarios
-Adelaide=c(138.6,-34.928)
+#function for predicting GAM
+pred.fun=function(MOD,DaT,Predictor)   
+{
+  Id.p=match(Predictor,names(DaT))
+  Min.x=min(DaT[,Id.p])
+  Max.x=max(DaT[,Id.p])
+  Tab=sort(table(DaT$TagCode))
+  newd=expand.grid(X=seq(Min.x,Max.x,length.out=100),
+                   TagCode=factor(names(Tab)[length(Tab)],
+                                  levels(DaT$TagCode)))
+  colnames(newd)[match('X',names(newd))]=Predictor
+  
+  pred <- predict.gam(MOD,newd,type = "response", se.fit = TRUE)
+  
+  sig=sigma(MOD)  #log transformation bias correction
+  newd=newd%>%
+    mutate(fit=pred$fit,
+           se.fit=pred$se.fit,
+           rel.fit=exp(fit)*exp(sig^2/2)/mean(exp(fit)*exp(sig^2/2)),
+           rel.upper=exp(fit+1.96*se.fit)*exp(sig^2/2)/mean(exp(fit)*exp(sig^2/2)),
+           rel.lower=exp(fit-1.96*se.fit)*exp(sig^2/2)/mean(exp(fit)*exp(sig^2/2)))
+  return(newd)
+}
+
+#function for plotting GAM predictions
+plt.pred.fn=function(newd)
+{
+  with(newd,
+       {
+         plot(Mn,rel.fit,ylab="",xlab="",col="transparent",
+              ylim=c(min(rel.lower),max(rel.upper)))
+         polygon(x=c(Mn,rev(Mn)),
+                 y=c(rel.lower,rev(rel.upper)),
+                 col='grey80')
+         lines(Mn,rel.fit,lwd=2)
+       })
+}
+
+#function for wrapping scenarios     
 fun.run.scen=function(Dat,SCEN)
 {
-  #create useful objects
+  #1. create useful objects
   state=unique(Dat$State)
   TAG=unique(Dat$TagCode)
   Sp=unique(Dat$Species)
@@ -373,7 +417,7 @@ fun.run.scen=function(Dat,SCEN)
   names(TAG.species)=Sp
   for(t in 1:length(TAG.species)) TAG.species[[t]]=unique(subset(Dat,Species==Sp[t])$TagCode)
   
-  #preliminary stuff
+  #2. preliminary stuff
   Lon.range=range(Dat$Longitude,na.rm=T)
   Lon.range[2]=ifelse(Lon.range[2]<129,140,Lon.range[2])
   Lat.range=range(Dat$Latitude,na.rm=T)
@@ -394,7 +438,7 @@ fun.run.scen=function(Dat,SCEN)
     dev.off() 
   }
   
-  #straight line distances (in km) between consecutive detections
+  #3. straight line distances (in km) between consecutive detections
   #       applying algorithm to avoid going over land
   Dat$Distance=distGeo(Dat[,c("Longitude.prev","Latitude.prev")],
                        Dat[,c("Longitude","Latitude")])
@@ -458,7 +502,7 @@ fun.run.scen=function(Dat,SCEN)
   Dat$Distance.c=with(Dat,ifelse(TagCode==TagCode.prev,Distance.c/1000,NA)) 
   
   
-  #Distribution of displacements and ROM across jurisdictions
+  #4. Distribution of displacements and ROM across jurisdictions
   Dat= Dat%>% 
     mutate(Juris=ifelse(zone%in%c("WC","Zone1","Zone2"),"WA",
                         ifelse(zone%in%c("SA.east","SA.west"),"SA",NA)),
@@ -468,7 +512,7 @@ fun.run.scen=function(Dat,SCEN)
                              ifelse(!Juris==Juris.prev,"NO",NA)))
   
   Cros.jur=Dat%>%filter(Same.juris=="NO")%>%
-    select(Species,TagCode,TagCode.prev,Juris,Juris.prev,
+    dplyr::select(Species,TagCode,TagCode.prev,Juris,Juris.prev,
            Longitude,Latitude,Longitude.prev,Latitude.prev,
            Datetime,Datetime.prev,Distance.c,Time)%>%
     mutate(Time=ifelse(is.na(Time),difftime(Datetime,Datetime.prev,units='mins'),Time))
@@ -477,7 +521,7 @@ fun.run.scen=function(Dat,SCEN)
                                   Cros.jur[,c("Longitude","Latitude")])/1000,Cros.jur$Distance.c)
   Cros.jur=Cros.jur%>%mutate(ROM=Distance.c/(Time/(24*60)))  # km/day
   
-  tiff(file=paste('displacement and ROM/Cross.juris_hist_figure_',SCEN,'.tiff',sep=''),
+  tiff(file=paste('Figure.2_Cross.juris_hist_figure_',SCEN,'.tiff',sep=''),
        width=2400,height=2400,units="px",res=300,compression="lzw+p")
   par(mfrow=c(2,1),mar=c(1,2,1,.1),oma=c(.5,3,.1,.5),las=1,
       mgp=c(2,.5,0),cex.axis=1.25,cex.lab=1.5,xpd=T)
@@ -495,10 +539,10 @@ fun.run.scen=function(Dat,SCEN)
   Dist.sumery=tapply(Cros.jur$Distance.c, Cros.jur$Species, summary)
   Tab2<-rbind(do.call(rbind,Dist.sumery),do.call(rbind,ROM.sumery))
   rownames(Tab2)=paste(c(rep('Distance',2),rep('ROM',2)),rownames(Tab2),sep='_')
-  write.csv(Tab2,paste('displacement and ROM/Cross.juris_summary_',SCEN,'.csv',sep=''))
+  write.csv(Tab2,paste('Table.2_Cross.juris_summary_',SCEN,'.csv',sep=''))
   
   
-  #cross jurisdictional displacements
+  #5. cross jurisdictional displacements
   Prop.time=vector('list',length(TAG))
   names(Prop.time)=TAG
   for(i in 1:length(TAG))
@@ -508,7 +552,7 @@ fun.run.scen=function(Dat,SCEN)
                                                       Datetime.prev,Longitude.prev,Latitude.prev,zone.prev,Juris.prev)))
   }
   
-  tiff(file=paste('figure_prop.time_',SCEN,'.tiff',sep=''),width=1800,height=2400,units="px",res=300,
+  tiff(file=paste('Figure.3_Prop.time.in.jurisdiction_',SCEN,'.tiff',sep=''),width=1800,height=2400,units="px",res=300,
        compression="lzw+p")
   par(mfcol=c(2,1),mar=c(1,1,1,1.25),oma=c(.1,.1,.1,.5),las=1,
       mgp=c(1.25,.35,0),cex.axis=1.1,cex.lab=1.25,xpd=T)
@@ -523,8 +567,8 @@ fun.run.scen=function(Dat,SCEN)
   dev.off()
   
   
-  #seasonal patterns plot distance from release thru time 
-  Spics=Dat%>%distinct(TagCode,.keep_all = T)%>%select(TagCode,Species)
+  #6. seasonal patterns plot distance from release thru time 
+  Spics=Dat%>%distinct(TagCode,.keep_all = T)%>%dplyr::select(TagCode,Species)
   Seasonal=Dat%>%
             left_join(subset(Rel.dat,select=c(TagCode,ReleaseDate,
                                               ReleaseLatitude,ReleaseLongitude)),by='TagCode')%>%
@@ -552,16 +596,16 @@ fun.run.scen=function(Dat,SCEN)
                                AdelaideLon=Adelaide[1],
                                AdelaideLat=Adelaide[2],
                                Delta.t=0)%>%
-                select(-Species)%>%
+          dplyr::select(-Species)%>%
                 left_join(Spics,by='TagCode')%>%
-                select(names(Seasonal))
+          dplyr::select(names(Seasonal))
   Add.relis$Dist.frm.Adld=ifelse(Add.relis$TagCode==Add.relis$TagCode.prev,
                                 distGeo(Add.relis[,c("AdelaideLon","AdelaideLat")],
                                         Add.relis[,c("ReleaseLongitude","ReleaseLatitude")])/1000,NA)
   
   Seasonal=rbind(Seasonal,Add.relis)%>%
         arrange(TagCode,Delta.t)%>%
-        select(TagCode,TagCode.prev,Species,Datetime,
+  dplyr::select(TagCode,TagCode.prev,Species,Datetime,
                              Dist.frm.rel,Dist.frm.Adld,Delta.t)%>%
         filter(!is.na(Dist.frm.rel))%>%
         mutate(Mn=month(Datetime),
@@ -570,70 +614,69 @@ fun.run.scen=function(Dat,SCEN)
                ln.Dist.frm.Adld=log(Dist.frm.Adld),
                scaled.Dist.frm.Adld=scale(Dist.frm.Adld))
   
-  #Bronzie    
+  #6.1 Bronzie    
   Seasonal.bronzie=Seasonal%>%
     filter(Species=='bronze whaler')
-  Sisonls.bronzie=c(31003,31000,30894,29587,29542,27698)
+  Sisonls.bronzie=c(31003,31000,30992,30894,29587,29542,27698)
   Seasonal.bronzie.Mod=Seasonal.bronzie%>%
                     filter(TagCode%in%Sisonls.bronzie)%>%
                     mutate(TagCode=as.factor(TagCode))%>%
                     arrange(TagCode,Datetime)
+    #check data first
+  tiff(file=paste('Figure.4_Seasonality_Distance.fom.Adelaide_Bronzie_',SCEN,'.tiff',sep=''),
+       width=2400,height=1800,units="px",res=300,compression="lzw+p")
+      fn.ggplot(dd=Seasonal.bronzie.Mod,
+              Y='Dist.frm.Adld',
+              X='Mn',
+              Y.lab="Distance from Adelaide (km)",
+              X.lab="Month")
+  dev.off()
 
-  fn.ggplot(dd=Seasonal.bronzie.Mod,
-            Y='Dist.frm.Adld',
-            X='Mn',
-            Y.lab="Distance from Adelaide (km)",
-            X.lab="Month")
-  
-  fn.ggplot(dd=Seasonal.bronzie.Mod,
-            Y='Dist.frm.Adld',
-            X='Delta.t',
-            Y.lab="Distance from Adelaide (km)",
-            X.lab="Delta.t")
-  
-
-  
-  Mod.bronzie=gam(ln.Dist.frm.Adld~s(Delta.t,bs='cc')+s(TagCode,bs='re'),data=Seasonal.bronzie.Mod)
+    #fit model
   Mod.bronzie=gam(ln.Dist.frm.Adld~s(Mn,bs='cc', k = 12)+s(TagCode,bs='re'),data=Seasonal.bronzie.Mod)
+
+    #predict normalized data
+    Bronzie.preds=pred.fun(MOD=Mod.bronzie,DaT=Seasonal.bronzie.Mod,Predictor="Mn")
+
+    #Plot predictions
+  tiff(file=paste('Figure.5_Seasonality_Distance.fom.Adelaide_Bronzie_model.pred_',SCEN,'.tiff',sep=''),
+       width=2400,height=1800,units="px",res=300,compression="lzw+p")
+  plt.pred.fn(Bronzie.preds)
+  dev.off()  
   
-  newd=data.frame(Mn=seq(1,12,length.out=100),TagCode=)
-  pred <- predict.gam(Mod.bronzie,newd,type = "response", se.fit = TRUE)
-  plot(newd$Mn,exp(pred$fit))
-  segments(newd$Mn,exp(pred$fit+1.96*pred$se.fit),
-         newd$Mn,exp(pred$fit-1.96*pred$se.fit))
-  
-  
-  #Dusky
+  #6.2 Dusky
   Seasonal.dusky=Seasonal%>%
     filter(Species=='Dusky')
-  Sisonls.dusky=c(49144,49146)
+  Sisonls.dusky=c(49144,52644,49146)
   Seasonal.dusky.Mod=Seasonal.dusky%>%
     filter(TagCode%in%Sisonls.dusky)%>%
     mutate(TagCode=as.factor(TagCode))%>%
     arrange(TagCode,Datetime)
   
-  fn.ggplot(dd=Seasonal.dusky.Mod,
-            Y='Dist.frm.Adld',
-            X='Mn',
-            Y.lab="Distance from Adelaide (km)",
-            X.lab="Month")
-  
-  fn.ggplot(dd=Seasonal.dusky.Mod,
-            Y='Dist.frm.Adld',
-            X='Delta.t',
-            Y.lab="Distance from Adelaide (km)",
-            X.lab="Delta.t")
-  
+    #check data first
+  tiff(file=paste('Figure.4_Seasonality_Distance.fom.Adelaide_Dusky_',SCEN,'.tiff',sep=''),
+       width=2400,height=1800,units="px",res=300,compression="lzw+p")
+    fn.ggplot(dd=Seasonal.dusky.Mod,
+              Y='Dist.frm.Adld',
+              X='Mn',
+              Y.lab="Distance from Adelaide (km)",
+              X.lab="Month")
+  dev.off()
 
-  Mod.dusky=gam(ln.Dist.frm.Adld~s(Delta.t,bs='cc')+s(TagCode,bs='re'),data=Seasonal.dusky.Mod)
-  ggplot(Seasonal.dusky.Mod,aes(x=Delta.t,y=ln.Dist.frm.Adld,col=TagCode))+
-    geom_line()
- # Mod.dusky=gam(ln.Dist.frm.Adld~s(Mn,bs='cc')+s(TagCode,bs='re'),data=Seasonal.dusky.Mod)
-  ggplot(Seasonal.dusky.Mod,aes(x=Delta.t,y=ln.Dist.frm.Adld,col=TagCode))+
-    geom_line()
-  
+    #fit model
+  n.knots=length(table(Seasonal.dusky.Mod$Mn))
+  Mod.dusky=gam(ln.Dist.frm.Adld~s(Mn,bs='cc', k = n.knots)+s(TagCode,bs='re'),data=Seasonal.dusky.Mod)
 
-  #Residency
+    #predict normalized data
+  Dusky.preds=pred.fun(MOD=Mod.dusky,DaT=Seasonal.dusky.Mod,Predictor="Mn")
+  
+    #Plot predictions
+  tiff(file=paste('Figure.5_Seasonality_Distance.fom.Adelaide_Dusky_model.pred_',SCEN,'.tiff',sep=''),
+       width=2400,height=1800,units="px",res=300,compression="lzw+p")
+  plt.pred.fn(newd=Dusky.preds)
+  dev.off()
+  
+  #7. Residency
   Residency=Dat%>%
         arrange(TagCode,Datetime)%>%
         mutate(event=ifelse(TagCode==TagCode.prev & Same.juris=="NO",1,0),
@@ -646,7 +689,7 @@ fun.run.scen=function(Dat,SCEN)
                 difftime(max(Datetime),min(Datetime.prev),units='mins'),NA))%>%
         mutate(Residency=Time.in.zn/as.numeric(Tot.time))%>%
         distinct(TagCode,event,TagCode.Juris,.keep_all = T)%>%
-        select(TagCode,Species,Rel.state,Juris,Residency,event,TagCode.Juris)%>%
+    dplyr::select(TagCode,Species,Rel.state,Juris,Residency,event,TagCode.Juris)%>%
         filter(!is.na(Residency))%>%
         data.frame()%>%mutate(Event.Juris=paste(event,Juris))
   
@@ -664,12 +707,12 @@ fun.run.scen=function(Dat,SCEN)
         mutate(index=1:length(event),
                Prop=Residency,
                Total.days='')%>%
-        select(index,Juris,Total.days,Prop,Rel.state)
+        dplyr::select(index,Juris,Total.days,Prop,Rel.state)
     }
     Prop.time.Res[[j]]=dummy
   }
 
-  tiff(file=paste('figure_residency_',SCEN,'.tiff',sep=''),width=1800,height=2400,units="px",res=300,
+  tiff(file=paste('Figure.6_Residency_',SCEN,'.tiff',sep=''),width=1800,height=2400,units="px",res=300,
         compression="lzw+p")
   par(mfcol=c(2,1),mar=c(1,1,1,1.25),oma=c(.1,.1,.1,.5),las=1,
       mgp=c(1.25,.35,0),cex.axis=1.1,cex.lab=1.25,xpd=T)
@@ -697,9 +740,11 @@ Conv.Tagging=Tagging%>%
   mutate(Recaptured=ifelse(!is.na(Yr.rec)|!is.na(Lat.rec)|!is.na(Long.rec),"Yes","No"),
          Rel.juris=ifelse(Long.rels>129,"SA","WA"),
          Rec.juris=ifelse( Recaptured=="Yes"& Long.rec>129,"SA","WA"),
-         Col.sp=ifelse(Species=="BW",2,3),
+         Col.sp=ifelse(Species=="BW","black","grey65"),
          Same.Juris=ifelse(Recaptured=="Yes"& Rel.juris==Rec.juris,"Yes",
-                           ifelse(Recaptured=="Yes"& !Rel.juris==Rec.juris,"No",NA)))
+                    ifelse(Recaptured=="Yes"& !Rel.juris==Rec.juris,"No",NA)))
+
+#summary of releases and recaptures by jurisdiction
 TAB.conv.rel.rec=Conv.Tagging%>%
   group_by(Rel.juris,Rec.juris,COMMON_NAME,Recaptured)%>%
   summarise(n=n())%>%
@@ -707,23 +752,58 @@ TAB.conv.rel.rec=Conv.Tagging%>%
   arrange(COMMON_NAME,Rel.juris,Recaptured)%>%
   data.frame%>%
   mutate(Rec.juris=ifelse(Recaptured=="No","N/A",Rec.juris))
+write.csv(TAB.conv.rel.rec,"Table.3_Conventional.tag_summary.csv",row.names = F)
 
-write.csv(TAB.conv.rel.rec,"Summary.conv.tag.csv",row.names = F)
+#Plot recaptures
+#ACA
+data(worldLLhigh)
 
+library(shape)
+SA.WA.lat=c(-40,-29)
+SA.WA.long=c(112,140)
+tiff("Figure.7.Conventional.tag.map.tiff",width=2400,height=1200,
+     units="px",res=300,compression="lzw")
+par(mar=c(.1,.1,.1,1),oma=c(.1,.1,.1,1))
+plotMap(worldLLhigh, xlim=SA.WA.long,ylim=SA.WA.lat,plt = c(.1, 1, 0.075, 1),
+        col="grey85",tck = 0.025, tckMinor = 0.0125, xlab="",ylab="",axes=F)
+box()
 with(subset(Conv.Tagging,Recaptured=="Yes" & Same.Juris=="No"),{
-  plot(1,1,ylim=c(-36,-30),xlim=c(113,140),ylab="",xlab="")
-  arrows(Long.rels,Lat.rels,Long.rec,Lat.rec,col=Col.sp)
+ Arrows(Long.rels,Lat.rels,Long.rec,Lat.rec,col=Col.sp,lwd=2, 
+         arr.type="curved", arr.width=.2)
+  points(Long.rels,Lat.rels,pch=19,col=Col.sp,cex=1.5)
+  
 })
+axis(side = 1, at =SA.WA.long[1]:SA.WA.long[2], labels = F, tcl = 0.15)
+axis(side = 2, at = SA.WA.lat[2]:SA.WA.lat[1], labels = F,tcl =0.15)
+n=seq(SA.WA.long[1],SA.WA.long[2],4)
+axis(side = 1, at =n, labels = n, tcl = 0.3,padj=-1.75)
+n=seq(SA.WA.lat[1]+1,SA.WA.lat[2],4)
+axis(side = 2, at = n, labels = abs(n),las=2,tcl =0.3,hadj=.2)
+
+OZ.lat=c(-44,-10)
+OZ.long=c(112,154)
+par(fig=c(.5,.85,.125,.50), new = T,mgp=c(.1,.4,0))
+plotMap(worldLLhigh, xlim=OZ.long,ylim=OZ.lat,plt = c(.1, 1, 0.075, 1),
+        col="grey85",tck = 0.025, tckMinor = 0.0125, xlab="",ylab="",axes=F)
+box()
+polygon(x=c(SA.WA.long,rev(SA.WA.long)),
+        y=c(rep(SA.WA.lat[1],2),rep(SA.WA.lat[2],2)),lwd=1.5,col=rgb(.1,.1,.1,alpha=.5))
+text(134,-22.5,("Australia"),col="black", cex=1.3)
+mtext(expression(paste("Longitude (",degree,"E)",sep="")),side=1,line=-1,font=1,las=0,cex=1.2,outer=T)
+mtext(expression(paste("Latitude (",degree,"S)",sep="")),side=2,line=-2,font=1,las=0,cex=1.2,outer=T)
+dev.off()
+
+#Size and time at liberty of those recaptured in SA
 Siz.sex.cross.conv=Conv.Tagging%>%
   filter(Recaptured=="Yes" & Same.Juris=="No")%>%
   mutate(Date.rel=as.POSIXct(paste(Yr.rel,Mn.rel,Day.rel,sep="-")),
          Date.rec=as.POSIXct(paste(Yr.rec,Mn.rec,Day.rec,sep="-")),
          time.at.liberty=Date.rec-Date.rel)%>%
-  select(Species,COMMON_NAME,Lat.rels,Long.rels,Lat.rec,Long.rec,
+  dplyr::select(Species,COMMON_NAME,Lat.rels,Long.rels,Lat.rec,Long.rec,
          Rel.juris,Rec.juris,Rel_FL,Sex,Date.rel,
          Date.rec,time.at.liberty)%>%
   arrange(Species,Date.rel,Sex)
-write.csv(Siz.sex.cross.conv,"Summary.conv.tag_time.liberty.csv",row.names = F)
+write.csv(Siz.sex.cross.conv,"Table.4_Conventional.tag_size.time.liberty_recaptured in SA.csv",row.names = F)
 
 
 

@@ -3408,20 +3408,24 @@ for(q in 1:length(Store.group))Store.group_ind.base[[q]]=fn.dat.for.ind.base.mdl
 
 
 #export
-setwd("C:/Matias/Data/Tagging/Pop dyn model/Acoustic")
+setwd("C:/Matias/Analyses/Data_outs")
 for(i in 1:length(Store.group))
 {
   #SS3 approach
   a=Store.group[[i]][1:4]
-  for(p in 1:length(a)) write.csv(a[[p]],paste(names(Store.group)[i],"_",names(a)[p],"_","Acous.Tag.csv",sep=""),row.names=F)
+  NmS=ifelse(names(Store.group)[i]=="Dusky",'Dusky shark',
+      ifelse(names(Store.group)[i]=='Whiskery','Whiskery shark',
+      ifelse(names(Store.group)[i]=='Gummy','Gummy shark',
+      ifelse(names(Store.group)[i]=='Thickskin','Sandbar shark',NA))))
+  for(p in 1:length(a)) write.csv(a[[p]],paste(getwd(),'/',NmS,'/',NmS,"_Acous.Tag_",names(a)[p],"_","Acous.Tag.csv",sep=""),row.names=F)
 
   b=Store.group.prop[[i]][1:4]
-  for(p in 1:length(b)) write.csv(b[[p]],paste(names(Store.group.prop)[i],"_",names(b)[p],"_","Acous.Tag.prop.csv",sep=""),row.names=F)
+  for(p in 1:length(b)) write.csv(b[[p]],paste(getwd(),'/',NmS,'/',NmS,"_Acous.Tag_",names(b)[p],"_","Acous.Tag.prop.csv",sep=""),row.names=F)
   
   #Individual-based model approach
   a=Store.group_ind.base[[i]]
   a=a[,-match("Index",names(a))]
-  write.csv(a,paste(names(Store.group.prop)[i],"_","Acous.Tag.Ind_based.csv",sep=""),row.names=F)
+  write.csv(a,paste(getwd(),'/',NmS,'/',NmS,'_Acous.Tag_Acous.Tag.Ind_based.csv',sep=""),row.names=F)
   
   #export data for mapping 
   if(names(Store.group)[i]%in%c("Gummy" ,"Whiskery"))

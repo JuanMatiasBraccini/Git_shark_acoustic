@@ -142,7 +142,7 @@ WCDGDLL=readOGR("C:/Matias/Data/Mapping/Shark_shape_files/WCDGDLL.shp", layer="W
 
 #Reported recaptures
 setwd("U:/Shark")  # working directory
-channel <- odbcConnectAccess2007("Sharks.mdb")      
+channel <- odbcConnectAccess2007("Sharks v20200323.mdb")      
 Rep.Recap=sqlFetch(channel, "Tag data", colnames = F)   
 close(channel)
 
@@ -278,6 +278,22 @@ this=match(c("SPECIES","ATAG_NO","SEX","Rep.pos","Rep.date","RELEASE DATE","DATE
             "RELLNGDECDEG","RECLATDECDEG","RECLNGDECDEG"),names(Rep.Recap))
 Re.Rec.Tab=Rep.Recap[order(Rep.Recap$SPECIES,Rep.Recap$ATAG_NO),this]
 write.csv(Re.Rec.Tab,"Tab.rep.rec.csv",row.names=F)
+
+#Export recaptures for population dynamics modelling
+Rep.Recap$year.rel=year(Rep.Recap$"RELEASE DATE")
+Rep.Recap$year.rec=year(Rep.Recap$"DATE_CAPTR")
+Rep.Recap$Recaptured=as.character(Rep.Recap$Recaptured)
+
+Pop.din.sp=c("BW",'WH','GM','TK')
+for(i in 1:length(Pop.din.sp))      
+{
+  a=subset(Rep.Recap,SPECIES==Pop.din.sp[i])
+  NmS=ifelse(Pop.din.sp[i]=="BW",'Dusky shark',
+             ifelse(Pop.din.sp[i]=='WH','Whiskery shark',
+                    ifelse(Pop.din.sp[i]=='GM','Gummy shark',
+                           ifelse(Pop.din.sp[i]=='TK','Sandbar shark',NA))))
+  write.csv(a,paste('C:/Matias/Analyses/Data_outs/',NmS,'/',NmS,"_Acous.Tag_Rep.Recap.csv",sep=""),row.names=F)
+}
 
 #Export as word table
 Scenarios.tbl=function(WD,Tbl,Doc.nm,caption,paragph,HdR.col,HdR.bg,Hdr.fnt.sze,Hdr.bld,

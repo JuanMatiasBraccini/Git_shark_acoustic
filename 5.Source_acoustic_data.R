@@ -17,8 +17,8 @@ library(geosphere)   #for spatial statistics and trigonometry in a sphere
 library(mixtools)    #for fitting bimodal normal distributions
 library(chron)      #for times
 #library(epitools)   #for extracting hours from times object
-
-
+library(dplyr)
+library(stringr)
 #library(prada)   #for fitting bivariate normal distribution
 # To install "prada"
 #source("http://www.bioconductor.org/biocLite.R")
@@ -26,30 +26,31 @@ library(chron)      #for times
 
 # library(adehabitatLT)   #for different types of random walks
 # library(VGAM)           #for fitting a Levy distribution
-
+options(stringsAsFactors = FALSE)
 
 #source bubble plot functions
-source("C:/Matias/Analyses/SOURCE_SCRIPTS/Bubble.plot.detections.R")
-source("C:/Matias/Analyses/SOURCE_SCRIPTS/Bubble.plot.R") 
+source("C:/Matias/Analyses/Acoustic_tagging/Git_shark_acoustic/Bubble.plot.detections.R")
+source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Bubble.plot.R") 
 
 
 #1. load data
 
-#1.1 TRANSMITTERS
-#note: make sure to have the most updated list of transmitters
-source("C:/Matias/Analyses/SOURCE_SCRIPTS/Source_acoustic_transmitters.R")
+
+# 1.1 TRANSMITTERS -------------------------------------------------
+#note: make sure to have the most updated list of transmitters.
+#        Since development of Shark Monitory System (SMS), transmitter info included 
+#         in detections data
+source("C:/Matias/Analyses/Acoustic_tagging/Git_shark_acoustic/Source_acoustic_transmitters.R")
 
 
-#1.2 RECEIVER DETECTIONS
+
+# 1.2 RECEIVER DETECTIONS -------------------------------------------------
 setwd("C:/Matias/Data/Tagging/Acoustic_tagging/Acoustic_tagging_data")
 
-#ACA: improve this, read in everything in file!!!
   #1.2.1 AATAMS
 AATAMS.depth=read.csv("NRETAstations.csv",stringsAsFactors =F)
-
 filenames <- list.files("AATAMS_downloads_processed", pattern="*.csv", full.names=TRUE)
 AATAMS <- lapply(filenames, read.csv,stringsAsFactors =F)
-  
   #extract relevant columns
 AATAMS[[1]]=AATAMS[[1]][,-match(c("sensor.value","sensor.unit"),names(AATAMS[[1]]))]
 for(a in 2:length(AATAMS))
@@ -69,21 +70,19 @@ AATAMS=do.call(rbind,AATAMS)
 
 
   #1.2.2 SMN
-SMN.gummy=read.csv(file="SMN_donwloads_processed/gummy.2017-06-16.csv",stringsAsFactors =F)
-SMN.whiskery=read.csv(file="SMN_donwloads_processed/whiskery.2017-06-16.csv",stringsAsFactors =F)
-SMN.dusky=read.csv(file="SMN_donwloads_processed/dusky.2017-06-16.csv",stringsAsFactors =F)
-SMN.sandbar=read.csv(file="SMN_donwloads_processed/sandbar.2017-06-16.csv",stringsAsFactors =F)
-
-SMN.copper=read.csv(file="SMN_donwloads_processed/copper.2015-08-03.csv",stringsAsFactors =F)
-
-
+#note: select latest file
+use.all='YES'
+SMN.gummy=read.csv(file="SMN_donwloads_processed/gummy.2018-10-19.csv",stringsAsFactors =F)
+SMN.whiskery=read.csv(file="SMN_donwloads_processed/whiskery.2018-10-19.csv",stringsAsFactors =F)
+SMN.dusky=read.csv(file="SMN_donwloads_processed/dusky.2018-10-19.csv",stringsAsFactors =F)
+SMN.sandbar=read.csv(file="SMN_donwloads_processed/sandbar.2018-10-19.csv",stringsAsFactors =F)
+SMN.copper=read.csv(file="SMN_donwloads_processed/copper.2018-10-19.csv",stringsAsFactors =F)
 if(use.all=="YES")
 {
-  SMN.white=read.csv(file="SMN_donwloads_processed/white.2017-08-14.csv",stringsAsFactors =F)
-  SMN.tiger=read.csv(file="SMN_donwloads_processed/tiger.2015-08-03.csv",stringsAsFactors =F)
-  SMN.greynurse=read.csv(file="SMN_donwloads_processed/greynurse.2015-08-03.csv",stringsAsFactors =F)
+  SMN.white=read.csv(file="SMN_donwloads_processed/white.2018-10-19.csv",stringsAsFactors =F)
+  SMN.tiger=read.csv(file="SMN_donwloads_processed/tiger.2018-10-19.csv",stringsAsFactors =F)
+  SMN.greynurse=read.csv(file="SMN_donwloads_processed/greynurse.2018-10-19.csv",stringsAsFactors =F)
 }
-
 #combine all species
 SMN=rbind(SMN.gummy,SMN.whiskery,SMN.dusky,SMN.sandbar,SMN.copper)
 if(use.all=="YES") SMN=rbind(SMN,SMN.white,SMN.tiger,SMN.greynurse)
@@ -91,7 +90,27 @@ SMN$Sex=as.character(SMN$Sex)
 SMN$Sex=ifelse(SMN$Sex=="m","M",ifelse(SMN$Sex=="?","U",SMN$Sex))
 
 
-#1.3 ALL RECEIVER LOCATIONS
+#1.2.3 SMS
+filenames <- list.files("SMS_donwloads_processed", pattern="*.csv", full.names=TRUE)
+SMS <- lapply(filenames, read.csv,stringsAsFactors =F)
+SMS=do.call(rbind,SMS)
+
+filenames <- list.files("SMS_tags", pattern="*.csv", full.names=TRUE)
+TAGS.SMS <- lapply(filenames, read.csv,stringsAsFactors =F)
+TAGS.SMS=do.call(rbind,TAGS.SMS)
+
+
+#1.2.4 Smart drumline array
+Smart.drumline.array=read.csv('Smart.drumline.array/SDTregion.csv',stringsAsFactors = F)
+
+
+#.2.5 Walpole array (Mike Travers)
+Walpole=read.csv("C:/Matias/Data/Tagging/Acoustic_tagging/Other researcher's tags/WNMP_Marine_detection_export.csv")
+
+
+
+# 1.3 ALL RECEIVER LOCATIONS -------------------------------------------------
+
   #1.3.1 AATAMS
 AATAMS.all=read.csv(file="AATAMS_receiver_location/AATAMS_receivers.manipulated_25_09_2012.csv")
 
@@ -105,36 +124,32 @@ SMN.all=subset(SMN.all,!station.name%in%c("SMN 2 Peoples Bay 01","SMN 2 Peoples 
 SMN.all=subset(SMN.all,latitude<(-25))
 
 
-
-
-# #1.5 BATHYMETRY
+# 1.4 BATHYMETRY -------------------------------------------------
 # Bathymetry_120=read.table("C:/Matias/Data/Mapping/get_data112_120.cgi")
 # Bathymetry_138=read.table("C:/Matias/Data/Mapping/get_data120.05_138.cgi")
 # Bathymetry=rbind(Bathymetry_120,Bathymetry_138)
 
-
-# #1.6. shapefile Perth islands
+# 1.5 Shapefile Perth islands -------------------------------------------------
 # PerthIs=read.table("C:/Matias/Data/Mapping/WAislandsPointsNew.txt", header=T)
 # Rottnest.Is=subset(PerthIs,ID%in%c("ROTT1"))
 # Garden.Is=subset(PerthIs,ID%in%c("ROTT3"))
 
 
-
-#2. Manipulate data
+# 2 Manipulate data -------------------------------------------------
 
   #2.1 remove duplicates (AATAMS records from SMN records & overlapping periods)
 SMN$Unico=with(SMN,paste(TagCode,Latitude,Longitude,Date.local,Time.local))
 duplis=SMN[duplicated(SMN$Unico),]
 SMN=SMN[!duplicated(SMN$Unico),]
 
-#deal with tags used multiple times
+#formating
 SMN$ReleaseDate=as.POSIXlt(as.character(SMN$ReleaseDate),format="%d-%b-%y")
 AATAMS$Release.Date=as.POSIXlt(as.character(AATAMS$Release.Date))
-
-
-TAGS$ReleaseDate2=as.POSIXlt(as.character(TAGS$ReleaseDate2),format='%d-%b-%y')
+TAGS$ReleaseDate2=as.POSIXlt(as.character(TAGS$ReleaseDate2))
 TAGS$ReleaseLatitude2=with(TAGS,ifelse(ReleaseLatitude2>0,-ReleaseLatitude2,ReleaseLatitude2))
 
+
+#deal with tags used multiple times
 a=subset(TAGS,select=c(Code2,Species2,Sex2,ReleaseDate2,ReleaseLatitude2,ReleaseLongitude2,ReleaseLength))
 names(a)=paste(names(a),"TAG",sep='_')
 b=a[duplicated(a$Code2_TAG),]
@@ -254,7 +269,7 @@ re.arranged.cols=match(c("ID","Species2","Sex2","receiver.ID","Release.Date","Re
                          "latitude","longitude","Depth","DateTime.local","Date.local","Time.local","Project"),
                        names(AATAMS))
 AATAMS=AATAMS[,re.arranged.cols]
-
+SMN=SMN[,-match("Name",names(SMN))]
 colnames(AATAMS)=colnames(SMN)
 
 AATAMS$SerialNumber=abs(as.numeric(gsub("^.*?-","-",as.character(AATAMS$SerialNumber))))
@@ -351,7 +366,7 @@ for (i in 1:nrow(Check))
 Recs=as.numeric(as.character(Check$SerialNumber))
 
 
-#merge data files
+# Merge SMN and AATAMS files -----------------------------------------------------------------------
 SMN$Date.local=as.character(SMN$Date.local)
 SMN$Time.local=as.character(SMN$Time.local)
 SMN$Species=as.character(SMN$Species)
@@ -375,8 +390,159 @@ Detections$Sex=ifelse(Detections$Sex=="m","M",ifelse(Detections$Sex=="f","F",Det
 Detections$Sex=ifelse(Detections$TagCode==29566,"M",Detections$Sex)
 
 
+# Merge Detections with SMS files -----------------------------------------------------------------------
 
-#Export inputs for analyses
+#Update Tag data
+TAGS.SMS=TAGS.SMS%>%
+  rename(Code2=TagCode,
+         Species2=Species,
+         Sex2=Sex,
+         Name2=Name,
+         ReleaseDate2=ReleaseDate,
+         ReleaseSite2=ReleaseSite,
+         ReleaseLatitude2=ReleaseLatitude,
+         ReleaseLongitude2=ReleaseLongitude)%>%
+  mutate(Tagger2=NA,
+         ReleaseDate2=as.POSIXlt(ReleaseDate2),
+         Project.rel=ifelse(ReleaseState=='SA',"South.Australia",
+                            ifelse(ReleaseState=='WA',"SMN",       
+                                   ReleaseState)))
+
+smn.tags=unique(TAGS$Code2)
+add.these.tags=smn.tags[which(!smn.tags%in%unique(TAGS.SMS$TagCode))]
+
+add.new=TAGS%>%
+  filter(Code2%in%add.these.tags)
+
+TAGS=rbind(TAGS.SMS%>%dplyr::select(names(TAGS)),add.new)%>%
+  mutate(Code2=as.numeric(Code2),
+         dummy=paste(Code2,Species2,Sex2,round(ReleaseLatitude2,2),round(ReleaseLongitude2,2)))
+TAGS=TAGS[!duplicated(TAGS$dummy),]%>%
+  dplyr::select(-dummy)
+
+
+SMS=SMS%>%
+  mutate(ReleaseDate=as.POSIXlt(ReleaseDate))  
+
+Detections=rbind(Detections,
+                 SMS%>%   
+                   mutate(Project=Project.rel)%>%
+                   dplyr::select(colnames(Detections)))%>%
+  mutate(dummy=paste(TagCode,Species,Sex,Latitude,Longitude,DateTime.local))
+
+
+# Add missing release info -----------------------------------------------------------------------
+Detections.add.rel=subset(Detections,is.na(ReleaseDate) | is.na(ReleaseLatitude) | is.na(ReleaseLongitude))
+Detections=subset(Detections,!dummy%in%unique(Detections.add.rel$dummy))
+Detections.add.rel=Detections.add.rel%>%
+  mutate(var=paste(TagCode,Species,Sex))
+dummy=TAGS%>%mutate(var=paste(Code2,Species2,Sex2))%>%
+  filter(var%in%Detections.add.rel$var)%>%
+  mutate(ReleaseDate2=as.POSIXlt(ReleaseDate2))
+Detections.add.rel=Detections.add.rel%>%
+        left_join(dummy%>%filter(Code2%in%unique(Detections.add.rel$TagCode)),by='var')
+Detections.add.rel=Detections.add.rel[!duplicated(Detections.add.rel$dummy),]
+Detections.add.rel=Detections.add.rel%>%
+          mutate(ReleaseDate=ifelse(is.na(ReleaseDate),as.character(ReleaseDate2),as.character(ReleaseDate)),
+                 ReleaseLatitude=ifelse(is.na(ReleaseLatitude),ReleaseLatitude2,ReleaseLatitude),
+                 ReleaseLongitude=ifelse(is.na(ReleaseLongitude),ReleaseLongitude2,ReleaseLongitude),
+                 ReleaseDate=as.POSIXlt(ReleaseDate))%>%
+  dplyr::select(colnames(Detections))
+Detections=rbind(Detections,Detections.add.rel)%>%
+              dplyr::select(-dummy)%>%
+              mutate(ReleaseLatitude=as.numeric(ReleaseLatitude),
+                     ReleaseLongitude=as.numeric(ReleaseLongitude))
+
+Detections$ReleaseLatitude=-abs(Detections$ReleaseLatitude)
+
+
+# Merge Detections with smart.drumline files -----------------------------------------------------------------------
+UTC.WA=8
+Smart.drumline.array=Smart.drumline.array%>%
+                  mutate(DateTime=as.POSIXlt(Datetime,  format="%d/%m/%Y %H:%M",tz="GMT"),
+                         DateTime.local=DateTime+(UTC.WA*3600),
+                         Date.local=trunc(DateTime.local,"days"),
+                         Time.local=times(format(DateTime.local, "%H:%M:%S")),
+                         Latitude=-abs(Latitude),
+                         TagCode=ifelse(nchar(Transmitter)>10,as.numeric(gsub("-", "", str_match(Transmitter, '(?:-[^-]+){1}$')[,1])),
+                                        ifelse(nchar(Transmitter)<10,as.numeric(gsub("-", "", Transmitter)),
+                                               NA)),
+                         SerialNumber=sub(".*-", "", Receiver),
+                         StationName2=StationArray,
+                         Depth=NA,
+                         DateTime.local=as.character(DateTime.local),
+                         Date.local=as.character(Date.local),
+                         Time.local=as.character(Time.local))
+
+b=subset(TAGS,Code2%in%unique(Smart.drumline.array$TagCode)& 
+           Species2%in%unique(Smart.drumline.array$Species))%>%
+  rename(TagCode=Code2,
+         Species=Species2,
+         Sex=Sex2,
+         ReleaseLatitude=ReleaseLatitude2,
+         ReleaseLongitude=ReleaseLongitude2,
+         Project=Project.rel,
+         ReleaseDate=ReleaseDate2)%>%
+  dplyr::select(TagCode,Species,Sex,ReleaseDate,ReleaseLatitude,ReleaseLongitude,Project)
+
+Smart.drumline.array=Smart.drumline.array%>%
+                left_join(b,by=c('TagCode','Species'))%>%
+                dplyr::select(names(Detections))
+
+Detections=rbind(Detections,
+                 Smart.drumline.array%>%   
+                   mutate(Project='SMN')%>%
+                   dplyr::select(colnames(Detections)))
+
+
+# Merge Detections with Walpole files -----------------------------------------------------------------------
+Walpole=Walpole%>%
+          mutate(DateTime=as.POSIXlt(paste(Date..UTC.,Time..UTC.),  format="%d/%m/%Y %H:%M",tz="GMT"),
+                 DateTime.local=DateTime+(UTC.WA*3600),
+                 Date.local=trunc(DateTime.local,"days"),
+                 Time.local=times(format(DateTime.local, "%H:%M:%S")),
+                 Latitude=-abs(Latitude),
+                 TagCode=ifelse(nchar(Transmitter)>10,as.numeric(gsub("-", "", str_match(Transmitter, '(?:-[^-]+){1}$')[,1])),
+                                ifelse(nchar(Transmitter)<10,as.numeric(gsub("-", "", Transmitter)),
+                                       NA)),
+                 SerialNumber=sub(".*-", "", Receiver),
+                 StationName2="Walpole",
+                 Depth=NA,
+                 DateTime.local=as.character(DateTime.local),
+                 Date.local=as.character(Date.local),
+                 Time.local=as.character(Time.local))
+
+b=subset(TAGS,Code2%in%unique(Walpole$TagCode))%>%
+  rename(TagCode=Code2,
+         Species=Species2,
+         Sex=Sex2,
+         ReleaseLatitude=ReleaseLatitude2,
+         ReleaseLongitude=ReleaseLongitude2,
+         Project=Project.rel,
+         ReleaseDate=ReleaseDate2)%>%
+  dplyr::select(TagCode,Species,Sex,ReleaseDate,ReleaseLatitude,ReleaseLongitude,Project)
+
+Walpole=Walpole%>%
+  left_join(b,by=c('TagCode'))%>%
+  dplyr::select(names(Detections))
+
+Detections=rbind(Detections,
+                 Smart.drumline.array%>%   
+                   mutate(Project='SMN')%>%
+                   dplyr::select(colnames(Detections)))
+
+
+
+# Remove duplicates (AATAMS records from SMN records & overlapping periods) -----------------------------------------------------------------------
+Detections$Unico=with(Detections,paste(TagCode,Latitude,Longitude,Date.local,Time.local))
+duplis=Detections[duplicated(Detections$Unico),]
+Detections=Detections[!duplicated(Detections$Unico),]
+Detections=Detections%>%
+            filter(!Species=='Test')%>%
+  dplyr::select(-Unico)
+
+
+# Export inputs for analyses-------------------------------------------------------------------------
 setwd("C:/Matias/Data/Tagging/Acoustic_tagging/Acoustic_tagging_data")
 write.csv(Detections,"Detections.csv",row.names=F)
 write.csv(AATAMS.all,"AATAMS.all.csv",row.names=F)

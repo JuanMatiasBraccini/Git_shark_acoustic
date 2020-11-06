@@ -20,7 +20,8 @@ setwd("C:/Users/myb/Desktop/AATAMS_donwloads")
 #Current.batch="Batch 1.10.2015"
 #Current.batch="Batch 7.12.2016"
 #Current.batch="Batch 22.2.2017"
-Current.batch="Batch 1.11.2018"
+#Current.batch="Batch 1.11.2018"
+Current.batch="Batch 23.09.2020"
 
 #1. RECEIVER DATA
 
@@ -143,6 +144,15 @@ if(Current.batch=="Batch 1.11.2018")
   
 }
 
+if(Current.batch=="Batch 23.09.2020")
+{
+  NRETA=read.csv(file="detection.csv",stringsAsFactors =F)
+  NRETA$timestamp=as_datetime(NRETA$timestamp)
+  NRETA=subset(NRETA,timestamp>as_datetime("2016-12-11"))
+  List=list(NRETA=NRETA)
+  
+}
+
 #Convert factors to character
 fn.fact.to.char=function(a)
 {
@@ -164,7 +174,7 @@ Data$ID=as.numeric(substring(as.character(Data$transmitter.ID), first=10, last =
 
 
 #Add tag information
-source("C:/Matias/Analyses/SOURCE_SCRIPTS/Source_acoustic_transmitters.R")  #Load tag ids. note: keep transmiters updated
+source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Source_acoustic_transmitters.R")  #Load tag ids. note: keep transmiters updated
 cool.tags=as.numeric(unique(TAGS$Code2))
 
 
@@ -256,7 +266,7 @@ if(Current.batch=="Batch 1.10.2015") write.csv(Data,file="Glenelg.data.to.08_08_
 if(Current.batch=="Batch 7.12.2016") write.csv(Data,file="AATAMS.data.to.21_03_2016.csv")
 if(Current.batch=="Batch 22.2.2017") write.csv(Data,file="AATAMS.data.to.11_12_2016.csv")
 if(Current.batch=="Batch 1.11.2018") write.csv(Data,file="AATAMS.data.to.02_10_2018.csv")
-
+if(Current.batch=="Batch 23.09.2020") write.csv(Data,file="AATAMS.data.to.03_05_2020.csv")
 
 
 

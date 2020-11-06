@@ -24,12 +24,12 @@ options(stringsAsFactors = FALSE)
 
 #1. Data Section---------------------------------------------------------
 setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie\\Data')
-Dat=read.csv('All detections_2018 01.csv')
+#Dat=read.csv('All detections_2018 01.csv')  #missing: need updated version, which should include what's in For.Charlie.csv
 SA.receivers=read.csv('GSV receiver location-IMOS.csv')
 Blank_LatLong=read.csv('Blank_LatLong.csv')
 
 
-#SMN individual tag download Nov 2019
+#SMN individual tag download Nov 2019    #missing: probably don need this as For.Charlie.csv has release info
 setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie\\Data\\SMN_download_Nov_19')
 file_list  <- list.files()
 DATA.SMN=do.call(rbind,lapply(file_list,read.csv))

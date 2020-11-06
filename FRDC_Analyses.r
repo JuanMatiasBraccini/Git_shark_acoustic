@@ -42,8 +42,6 @@
 #29. -- Fisheries Oceanography figures ---
 
 
-#MISSING: add Mike Travers Walpole data (C:\Matias\Data\Tagging\Acoustic_tagging\Other researcher's tags\WNMP_Marine_detection_export.csv )
-
 rm(list=ls(all=TRUE))
 
 library(sp)
@@ -61,11 +59,15 @@ library(lubridate)
 library(oce)   #for day length
 library(ReporteRs)
 library(randomForest)
+library(data.table)
 
+options(stringsAsFactors = FALSE)
 
 #source bubble plot functions
-source("C:/Matias/Analyses/SOURCE_SCRIPTS/Bubble.plot.detections.R")
-source("C:/Matias/Analyses/SOURCE_SCRIPTS/Bubble.plot.R") 
+source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Bubble.plot.R") 
+source("C:/Matias/Analyses/Acoustic_tagging/Git_shark_acoustic/Bubble.plot.detections.R")
+
+
 source("C:/Matias/Analyses/SOURCE_SCRIPTS/Deviance.explained.R")
 
 ###### DATA SECTION ############
@@ -76,11 +78,11 @@ source("C:/Matias/Analyses/SOURCE_SCRIPTS/Deviance.explained.R")
 #source("C:/Matias/Analyses/Acoustic_tagging/5.Source_acoustic_data.R")
 
 setwd("C:/Matias/Data/Tagging/Acoustic_tagging/Acoustic_tagging_data")
-Detections=read.csv("Detections.csv",stringsAsFactors=F)
-AATAMS.all=read.csv("AATAMS.all.csv",stringsAsFactors=F)
-SMN.all=read.csv("SMN.all.csv",stringsAsFactors=F)
+Detections=fread("Detections.csv",data.table=FALSE)
+AATAMS.all=fread("AATAMS.all.csv",data.table=FALSE)
+SMN.all=fread("SMN.all.csv",data.table=FALSE)
 TAGS=read.csv("TAGS.csv",stringsAsFactors=F)
-
+#ACA
 
 PerthIs=read.table("C:/Matias/Data/Mapping/WAislandsPointsNew.txt", header=T)
 Rottnest.Is=subset(PerthIs,ID%in%c("ROTT1"))

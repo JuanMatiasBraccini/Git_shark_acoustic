@@ -19,6 +19,8 @@ library(chron)      #for times
 #library(epitools)   #for extracting hours from times object
 library(dplyr)
 library(stringr)
+library(data.table)
+library(lubridate)
 #library(prada)   #for fitting bivariate normal distribution
 # To install "prada"
 #source("http://www.bioconductor.org/biocLite.R")
@@ -101,11 +103,16 @@ TAGS.SMS=do.call(rbind,TAGS.SMS)
 
 
 #1.2.4 Smart drumline array
+  #VR4s
 Smart.drumline.array=read.csv('Smart.drumline.array/SDTregion.csv',stringsAsFactors = F)
+  #VR2s
+Smart.drumline.array.VR2=fread('Smart.drumline.array/SDL data for Matias Nov2020/VUE_Export_2019.csv',data.table=FALSE)
+Smart.drumline.array.receivers=fread('Smart.drumline.array/SDL data for Matias Nov2020/Receivers_2019.csv',data.table=FALSE)
 
 
 #.2.5 Walpole array (Mike Travers)
-Walpole=read.csv("C:/Matias/Data/Tagging/Acoustic_tagging/Other researcher's tags/WNMP_Marine_detection_export.csv")
+Walpole=read.csv("C:/Matias/Data/Tagging/Acoustic_tagging/Other researcher's tags/walpole_shark_detections_2017_to_2020.csv")
+#Walpole=read.csv("C:/Matias/Data/Tagging/Acoustic_tagging/Other researcher's tags/WNMP_Marine_detection_export.csv")
 
 
 
@@ -457,6 +464,7 @@ Detections$ReleaseLatitude=-abs(Detections$ReleaseLatitude)
 
 
 # Merge Detections with smart.drumline files -----------------------------------------------------------------------
+  #VR4s
 UTC.WA=8
 Smart.drumline.array=Smart.drumline.array%>%
                   mutate(DateTime=as.POSIXlt(Datetime,  format="%d/%m/%Y %H:%M",tz="GMT"),
@@ -495,17 +503,96 @@ Detections=rbind(Detections,
                    dplyr::select(colnames(Detections)))
 
 
+  #VR2
+Sentinels=TAGS%>%
+  filter(Species2%in%c('Test','SENTINEL'))%>%
+  pull(Code2)
+
+more.sentinels=Smart.drumline.array.receivers%>%
+  filter(nchar(Receiver)>10)
+Smart.drumline.array.receivers=Smart.drumline.array.receivers%>%
+  filter(!Receiver%in%more.sentinels$Receiver)%>%
+  mutate(Receiver=as.numeric(Receiver),
+         Date_in= as.POSIXlt(Date_in,  format="%d/%m/%Y",tz="GMT"),
+         Date_out= as.POSIXlt(Date_out,  format="%d/%m/%Y",tz="GMT"))
+more.sentinels=more.sentinels%>%
+  mutate(Receiver=as.numeric(gsub("-", "", str_match(Receiver, '(?:-[^-]+){1}$')[,1])))
+
+Sentinels=c(Sentinels,more.sentinels$Receiver)
+
+not_all_na <- function(x) any(!is.na(x))
+
+Smart.drumline.array.VR2=Smart.drumline.array.VR2%>%
+  select_if(not_all_na)%>%  #remove columns of all NAs
+  mutate(TagCode=ifelse(nchar(Transmitter)>10,as.numeric(gsub("-", "", str_match(Transmitter, '(?:-[^-]+){1}$')[,1])),
+                        ifelse(nchar(Transmitter)<10,as.numeric(gsub("-", "", Transmitter)),
+                               NA)))%>%
+  filter(!TagCode%in%Sentinels)%>%
+  rename(Datetime="Date and Time (UTC)")%>%
+  mutate(DateTime=as.POSIXlt(Datetime,  format="%Y-%m-%d %H:%M:%S",tz="GMT"),
+         DateTime.local=DateTime+(UTC.WA*3600),
+         Date.local=trunc(DateTime.local,"days"),
+         Time.local=times(format(DateTime.local, "%H:%M:%S")),
+         SerialNumber=sub(".*-", "", Receiver),
+         Receiver=as.numeric(gsub("-", "", str_match(Receiver, '(?:-[^-]+){1}$')[,1])),
+         DateTime.local=as.character(DateTime.local),
+         Date.local=as.character(Date.local),
+         Time.local=as.character(Time.local))
+
+Smart.drumline.array.VR2=Smart.drumline.array.VR2%>%
+  left_join(Smart.drumline.array.receivers,by="Receiver")%>%
+  mutate(Latitude=-abs(Latitude),
+         dummy=paste(TagCode,Receiver,DateTime))
+
+duplis=Smart.drumline.array.VR2[duplicated(Smart.drumline.array.VR2$dummy),]%>%pull(dummy)
+duplis1=Smart.drumline.array.VR2%>%filter(dummy%in%duplis)
+Smart.drumline.array.VR2=Smart.drumline.array.VR2%>%filter(!dummy%in%duplis)
+Now=as.character(as.POSIXlt(Sys.Date()))
+duplis1=duplis1%>%
+  mutate(Date_out=as.character(Date_out),
+         Date_out=ifelse(is.na(Date_out),Now,Date_out),
+         Date_out= as.POSIXlt(Date_out,  format="%Y-%m-%d",tz="GMT"),
+         within.date= DateTime %within% interval(ymd(Date_in), ymd(Date_out)))
+duplis1=duplis1[duplis1$within.date,]%>%
+  dplyr::select(colnames(Smart.drumline.array.VR2))
+Smart.drumline.array.VR2=rbind(Smart.drumline.array.VR2,duplis1)
+
+b=subset(TAGS,Code2%in%unique(Smart.drumline.array.VR2$TagCode))%>%
+  rename(TagCode=Code2,
+         Species=Species2,
+         Sex=Sex2,
+         ReleaseLatitude=ReleaseLatitude2,
+         ReleaseLongitude=ReleaseLongitude2,
+         Project=Project.rel,
+         ReleaseDate=ReleaseDate2)%>%
+  dplyr::select(TagCode,Species,Sex,ReleaseDate,ReleaseLatitude,ReleaseLongitude,Project)%>% 
+  group_by(TagCode) %>%
+  filter(ReleaseDate == max(ReleaseDate)) 
+
+
+Smart.drumline.array.VR2=Smart.drumline.array.VR2%>%
+  left_join(b,by=c('TagCode'))%>%
+  dplyr::select(names(Detections))%>%
+  filter(!is.na(Species))
+
+Detections=rbind(Detections,Smart.drumline.array.VR2)
+
+
+
 # Merge Detections with Walpole files -----------------------------------------------------------------------
 Walpole=Walpole%>%
-          mutate(DateTime=as.POSIXlt(paste(Date..UTC.,Time..UTC.),  format="%d/%m/%Y %H:%M",tz="GMT"),
+          mutate(date=str_replace_all(date, "-", "/"),
+                 DateTime=as.POSIXlt(paste(date,time),  format="%Y/%m/%d %H:%M",tz="GMT"),
                  DateTime.local=DateTime+(UTC.WA*3600),
                  Date.local=trunc(DateTime.local,"days"),
                  Time.local=times(format(DateTime.local, "%H:%M:%S")),
-                 Latitude=-abs(Latitude),
+                 Latitude=-abs(lat),
+                 Longitude=lon,
+                 Transmitter=transmitterID,
                  TagCode=ifelse(nchar(Transmitter)>10,as.numeric(gsub("-", "", str_match(Transmitter, '(?:-[^-]+){1}$')[,1])),
                                 ifelse(nchar(Transmitter)<10,as.numeric(gsub("-", "", Transmitter)),
                                        NA)),
-                 SerialNumber=sub(".*-", "", Receiver),
+                 SerialNumber=sub(".*-", "", receiverID),
                  StationName2="Walpole",
                  Depth=NA,
                  DateTime.local=as.character(DateTime.local),
@@ -521,6 +608,17 @@ b=subset(TAGS,Code2%in%unique(Walpole$TagCode))%>%
          Project=Project.rel,
          ReleaseDate=ReleaseDate2)%>%
   dplyr::select(TagCode,Species,Sex,ReleaseDate,ReleaseLatitude,ReleaseLongitude,Project)
+
+dupli.wal.pole=table(b$TagCode)
+dupli.wal.pole=subset(dupli.wal.pole,dupli.wal.pole>1)
+dupli.wal.pole=subset(b,TagCode%in%names(dupli.wal.pole))
+
+b=subset(b,!TagCode%in%dupli.wal.pole$TagCode)
+dupli.wal.pole=dupli.wal.pole%>%group_by(TagCode)%>%mutate()
+b=rbind(b,dupli.wal.pole %>%
+                group_by(TagCode)%>%
+                filter(ReleaseDate == max(ReleaseDate))%>%
+                data.frame)
 
 Walpole=Walpole%>%
   left_join(b,by=c('TagCode'))%>%

@@ -3,6 +3,21 @@
 #note: This script is used for any analysis (FRDC, white shark, etc) of acoustic tagging data for
 #       loading the data from the different data bases
 
+#MISSING: add depth to NA depths use this
+# {
+#   #Get missing bathymetry from marmap package. great plotting too!
+#   library(marmap)
+#   papoue <- getNOAA.bathy(lon1 = 140, lon2 = 155,
+#                           lat1 = -13, lat2 = 0, resolution = 4)
+#   blues <- c("lightsteelblue4", "lightsteelblue3",
+#              "lightsteelblue2", "lightsteelblue1")
+#   greys <- c(grey(0.6), grey(0.93), grey(0.99))
+#   plot(papoue, image = TRUE, land = TRUE, lwd = 0.03,
+#        bpal = list(c(0, max(papoue), greys),
+#                    c(min(papoue), 0, blues)))
+#   # Add coastline
+#   plot(papoue, n = 1, lwd = 0.4, add = TRUE)
+# }
 
 #note: data must be updated as receivers are downloaded
 

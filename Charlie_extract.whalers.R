@@ -2,6 +2,10 @@
 library(data.table)
 library(dplyr)
 
+send.only.shared=FALSE
+send.all=TRUE
+UTC.WA=8
+
 setwd("C:/Matias/Data/Tagging/Acoustic_tagging/Acoustic_tagging_data")
 Detections=fread("Detections.csv",data.table=FALSE)
 
@@ -13,17 +17,22 @@ These.tags=c(These.tags,WA.tagged_detected.in.SA)
   #tags
 TAGS=read.csv("TAGS.csv",stringsAsFactors=F)%>%
   filter(Species2%in%c('bronze whaler','Dusky') & Project.rel=="SMN")
-
-  #detections
 SMN.tags.bronze.dusky=Detections%>%
   filter(Species%in%c('bronze whaler','Dusky') & Project=="SMN")%>%
   distinct(TagCode,.keep_all = T)
-SMN=subset(Detections,Species%in%c('bronze whaler','Dusky'))
-SMN$Sex=as.character(SMN$Sex)
-SMN$Sex=ifelse(SMN$Sex=="m","M",SMN$Sex)
-SMN=subset(SMN,TagCode%in%These.tags & Longitude<=129)
+tags=unique(c(TAGS$Code2,SMN.tags.bronze.dusky$TagCode))
+
+  #Detections
+SMN=Detections%>%
+      filter(Species%in%c('bronze whaler','Dusky'))%>%
+  mutate(Sex=as.character(Sex),
+         Sex=ifelse(Sex=="m","M",Sex),
+         DateTime.local=as.POSIXlt(DateTime.local,  format="%Y-%m-%d %H:%M",tz="GMT"),
+         DateTime=DateTime.local-(UTC.WA*3600))
+if(send.only.shared) SMN=subset(SMN,TagCode%in%These.tags & Longitude<=129)
+if(send.all)   SMN=subset(SMN, Longitude<=129)
 
 #Export stuff
 setwd("C:/Matias/Analyses/Acoustic_tagging/For Charlie/Data")
-write.csv(unique(c(TAGS$Code2,SMN.tags.bronze.dusky$TagCode)),"For.Charlie_WA.tags.csv",row.names=F)
+write.csv(tags,"For.Charlie_WA.tags.csv",row.names=F)
 write.csv(SMN,"For.Charlie.csv",row.names=F)

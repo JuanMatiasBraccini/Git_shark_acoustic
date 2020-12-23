@@ -19,11 +19,14 @@ library(mgcViz)
 library(vioplot)
 library(beanplot)
 library(PBSmapping)
+library(data.table)
 
-options(stringsAsFactors = FALSE)
+options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE)
 
 #1. Data Section---------------------------------------------------------
 setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie\\Data')
+#Yuri's repository https://www.dropbox.com/sh/v1rhv50ew4po9sa/AACuAb2gQvR99urBwJ8nzN95a?dl=0
+Dat= fread('Total_detections_2020_12_14.csv',data.table=FALSE) 
 #Dat=read.csv('All detections_2018 01.csv')  #missing: need updated version, which should include what's in For.Charlie.csv
 SA.receivers=read.csv('GSV receiver location-IMOS.csv')
 Blank_LatLong=read.csv('Blank_LatLong.csv')
@@ -735,14 +738,14 @@ fun.run.scen(Dat=Dat.scen2,SCEN="Scen2")
 
 
 # Conventional tagging----------------------------------------------------------------
-Conv.Tagging=Tagging%>%
-  filter(Species%in%c("BW","CP") & !is.na(Lat.rels))%>%
-  mutate(Recaptured=ifelse(!is.na(Yr.rec)|!is.na(Lat.rec)|!is.na(Long.rec),"Yes","No"),
-         Rel.juris=ifelse(Long.rels>129,"SA","WA"),
-         Rec.juris=ifelse( Recaptured=="Yes"& Long.rec>129,"SA","WA"),
-         Col.sp=ifelse(Species=="BW","black","grey65"),
-         Same.Juris=ifelse(Recaptured=="Yes"& Rel.juris==Rec.juris,"Yes",
-                    ifelse(Recaptured=="Yes"& !Rel.juris==Rec.juris,"No",NA)))
+# Conv.Tagging=Tagging%>%
+#   filter(Species%in%c("BW","CP") & !is.na(Lat.rels))%>%
+#   mutate(Recaptured=ifelse(!is.na(Yr.rec)|!is.na(Lat.rec)|!is.na(Long.rec),"Yes","No"),
+#          Rel.juris=ifelse(Long.rels>129,"SA","WA"),
+#          Rec.juris=ifelse( Recaptured=="Yes"& Long.rec>129,"SA","WA"),
+#          Col.sp=ifelse(Species=="BW","black","grey65"),
+#          Same.Juris=ifelse(Recaptured=="Yes"& Rel.juris==Rec.juris,"Yes",
+#                     ifelse(Recaptured=="Yes"& !Rel.juris==Rec.juris,"No",NA)))
 
 #summary of releases and recaptures by jurisdiction
 TAB.conv.rel.rec=Conv.Tagging%>%

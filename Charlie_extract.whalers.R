@@ -35,4 +35,5 @@ if(send.all)   SMN=subset(SMN, Longitude<=129)
 #Export stuff
 setwd("C:/Matias/Analyses/Acoustic_tagging/For Charlie/Data")
 write.csv(tags,"For.Charlie_WA.tags.csv",row.names=F)
+write.csv(TAGS,"For.Charlie_WA.tags_all.info.csv",row.names=F)
 write.csv(SMN,"For.Charlie.csv",row.names=F)

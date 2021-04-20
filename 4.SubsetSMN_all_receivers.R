@@ -1,7 +1,8 @@
 #SCRIPT FOR MANIPULATING SMN RECEIVERS INFOR
 
 #1. lOAD DATA
-setwd("C:/Matias/Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/SMN_receiver_location")
+handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+setwd(handl_OneDrive("Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/SMN_receiver_location"))
 SMN=read.csv(file="ReceiverStationDetailsReport.27_07_2015.csv")
 #SMN=read.csv(file="ReceiverStationDetailsReport.10_04_2015.csv")
 #SMN=read.csv(file="ReceiverStationDetailsReport.25_09_2012.csv")
@@ -9,7 +10,7 @@ SMN=read.csv(file="ReceiverStationDetailsReport.27_07_2015.csv")
 
 #2. MANIPULATE DATA
 THIS=match(c("Name1","Latitude1","Longitude1","SerialNumber"),colnames(SMN))
-#THIS=match(c("Name1","Latitude1","Longitude1","ï..SerialNumber"),colnames(SMN))
+#THIS=match(c("Name1","Latitude1","Longitude1","?..SerialNumber"),colnames(SMN))
 colnames(SMN)[THIS]=c("station.name","latitude","longitude","receiver.ID")
 
 

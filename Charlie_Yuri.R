@@ -27,8 +27,9 @@ User='Matias'
 
 if(User=='Matias')
 {
-  hndl.in=function(x) paste("C:/Matias/Analyses/Acoustic_tagging/For Charlie/Data",x,sep='/')
-  hndl.out=function(x) paste("C:/Matias/Analyses/Acoustic_tagging/For Charlie/Results",x,sep='/')
+  handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+  hndl.in=function(x) paste(handl_OneDrive("Analyses/Acoustic_tagging/For Charlie/Data"),x,sep='/')
+  hndl.out=function(x) paste(handl_OneDrive("Analyses/Acoustic_tagging/For Charlie/Results"),x,sep='/')
 }
   
 if(User=='Yuri')

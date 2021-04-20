@@ -8,6 +8,7 @@
 #           same names specified below
 
 library(chron) #for extracting time
+handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
 
 setwd("C:/Users/myb/Desktop/SMN_downloads")
 
@@ -38,7 +39,7 @@ UTC.WA=8
 fn.extract=function(Data)
 {
   #Extract Date and Time
-  #Data$DateTime=as.POSIXlt(as.character(Data$"ï..Datetime"), format="%d-%b-%Y %r", tz="GMT") #use this for upto 11/10/2012
+  #Data$DateTime=as.POSIXlt(as.character(Data$"?..Datetime"), format="%d-%b-%Y %r", tz="GMT") #use this for upto 11/10/2012
   Data$DateTime=as.POSIXlt(as.character(Data$Datetime),  format="%d/%m/%Y %H:%M",tz="GMT")#use this for 12/10/2012 to 27/12/2012
   Data$DateTime.local=Data$DateTime+(UTC.WA*3600)  
   Data$Date.local=trunc(Data$DateTime.local,"days")
@@ -62,6 +63,6 @@ fn.extract=function(Data)
 }
 
 #Export data
-setwd("C:/Matias/Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/SMN_donwloads_processed")
+setwd(handl_OneDrive("Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/SMN_donwloads_processed"))
 system.time(for(i in 1:length(DATA)) write.csv(fn.extract(DATA[[i]]),
                                     file=paste(names(DATA)[i],".",Sys.Date(),".csv",sep='')))

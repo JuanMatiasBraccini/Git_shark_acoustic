@@ -46,8 +46,9 @@ library(lubridate)
 options(stringsAsFactors = FALSE)
 
 #source bubble plot functions
-source("C:/Matias/Analyses/Acoustic_tagging/Git_shark_acoustic/Bubble.plot.detections.R")
-source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Bubble.plot.R") 
+handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+source(handl_OneDrive("Analyses/Acoustic_tagging/Git_shark_acoustic/Bubble.plot.detections.R"))
+source(handl_OneDrive("Analyses/SOURCE_SCRIPTS/Git_other/Bubble.plot.R")) 
 
 
 #1. load data
@@ -57,12 +58,12 @@ source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Bubble.plot.R")
 #note: make sure to have the most updated list of transmitters.
 #        Since development of Shark Monitory System (SMS), transmitter info included 
 #         in detections data
-source("C:/Matias/Analyses/Acoustic_tagging/Git_shark_acoustic/Source_acoustic_transmitters.R")
+source(handl_OneDrive("Analyses/Acoustic_tagging/Git_shark_acoustic/Source_acoustic_transmitters.R"))
 
 
 
 # 1.2 RECEIVER DETECTIONS -------------------------------------------------
-setwd("C:/Matias/Data/Tagging/Acoustic_tagging/Acoustic_tagging_data")
+setwd(handl_OneDrive("Data/Tagging/Acoustic_tagging/Acoustic_tagging_data"))
 
   #1.2.1 AATAMS
 AATAMS.depth=read.csv("NRETAstations.csv",stringsAsFactors =F)
@@ -126,7 +127,7 @@ Smart.drumline.array.receivers=fread('Smart.drumline.array/SDL data for Matias N
 
 
 #.2.5 Walpole array (Mike Travers)
-Walpole=read.csv("C:/Matias/Data/Tagging/Acoustic_tagging/Other researcher's tags/walpole_shark_detections_2017_to_2020.csv")
+Walpole=read.csv(handl_OneDrive("Data/Tagging/Acoustic_tagging/Other researcher's tags/walpole_shark_detections_2017_to_2020.csv"))
 #Walpole=read.csv("C:/Matias/Data/Tagging/Acoustic_tagging/Other researcher's tags/WNMP_Marine_detection_export.csv")
 
 
@@ -138,7 +139,7 @@ AATAMS.all=read.csv(file="AATAMS_receiver_location/AATAMS_receivers.manipulated_
 
   #1.3.2 SMN
 SMN.all=read.csv(file="SMN_receiver_location/SMN_receivers.manipulated.csv")
-SMN.depths=read.csv("C:/Matias/Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/Station depths and history.csv")
+SMN.depths=read.csv(handl_OneDrive("Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/Station depths and history.csv"))
 
 #drop Two Peoples bay and NRETA
 SMN.all=subset(SMN.all,!station.name%in%c("SMN 2 Peoples Bay 01","SMN 2 Peoples Bay 02","SMN 2 Peoples Bay 03",       
@@ -656,7 +657,7 @@ Detections=Detections%>%
 
 
 # Export inputs for analyses-------------------------------------------------------------------------
-setwd("C:/Matias/Data/Tagging/Acoustic_tagging/Acoustic_tagging_data")
+setwd(handl_OneDrive("Data/Tagging/Acoustic_tagging/Acoustic_tagging_data"))
 write.csv(Detections,"Detections.csv",row.names=F)
 write.csv(AATAMS.all,"AATAMS.all.csv",row.names=F)
 write.csv(SMN.all,"SMN.all.csv",row.names=F)

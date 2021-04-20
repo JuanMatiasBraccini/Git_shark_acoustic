@@ -5,11 +5,11 @@ library(dplyr)
 send.only.shared=FALSE
 send.all=TRUE
 UTC.WA=8
-
-setwd("C:/Matias/Data/Tagging/Acoustic_tagging/Acoustic_tagging_data")
+handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+setwd(handl_OneDrive("Data/Tagging/Acoustic_tagging/Acoustic_tagging_data"))
 Detections=fread("Detections.csv",data.table=FALSE)
 
-South.Oz=read.csv(file="C:/Matias/Data/Tagging/Acoustic_tagging/Other researcher's tags/Charlie's tags.csv")
+South.Oz=read.csv(file=handl_OneDrive("Data/Tagging/Acoustic_tagging/Other researcher's tags/Charlie's tags.csv"))
 These.tags=c(South.Oz$Code2,23293,23294)
 WA.tagged_detected.in.SA=c(23303,27698,29542,29454,29587,30870,30891,30894,30992,31000,31003)
 These.tags=c(These.tags,WA.tagged_detected.in.SA)
@@ -33,7 +33,7 @@ if(send.only.shared) SMN=subset(SMN,TagCode%in%These.tags & Longitude<=129)
 if(send.all)   SMN=subset(SMN, Longitude<=129)
 
 #Export stuff
-setwd("C:/Matias/Analyses/Acoustic_tagging/For Charlie/Data")
+setwd(handl_OneDrive("Analyses/Acoustic_tagging/For Charlie/Data"))
 write.csv(tags,"For.Charlie_WA.tags.csv",row.names=F)
 write.csv(TAGS,"For.Charlie_WA.tags_all.info.csv",row.names=F)
 write.csv(SMN,"For.Charlie.csv",row.names=F)

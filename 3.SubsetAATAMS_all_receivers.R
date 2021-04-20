@@ -1,7 +1,9 @@
 #SCRIPT FOR MANIPULATING AATAMS RECEIVERS INFOR
 
 #1. lOAD DATA
-setwd("C:/Matias/Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/AATAMS_receiver_location")
+handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+
+setwd(handl_OneDrive("Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/AATAMS_receiver_location"))
 #setwd("M:/Fisheries Research/FinFish/Shark/Braccini/Acoustic_tagging_data/AATAMS_receiver_location")
 
 AATAMS=read.csv(file="AATAMS_receivers_25_09_2012.csv")

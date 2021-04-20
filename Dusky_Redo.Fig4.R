@@ -1,5 +1,6 @@
 #Re do Simons
-setwd("C:/Matias/Analyses/Acoustic_tagging/Dusky_migration/Re.do.Fig.4")
+handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+setwd(handl_OneDrive("Analyses/Acoustic_tagging/Dusky_migration/Re.do.Fig.4"))
 library(RODBC)
 channel <- odbcConnectExcel2007("FL.xlsx") 
 FL<- sqlFetch(channel,"dat")
@@ -27,7 +28,7 @@ col.bg.M=rgb(.1,.1,.1,alpha=0.1)
 #male.col="blue"
 #col.bg.M=rgb(0,0,0.75,alpha=0.1)
 
-setwd("C:/Matias/Analyses/Acoustic_tagging/FRDC/Outputs_movement/Natal_migration/Paper")
+setwd(handl_OneDrive("Analyses/Acoustic_tagging/FRDC/Outputs_movement/Natal_migration/Paper"))
 tiff(file="Figure_prob_movement N_S_Simon.tiff",width = 2400, height = 2400,units = "px", res = 300,compression = "lzw")
 par(mfrow=c(2,2),mar=c(3,3,1.5,.1), oma=c(1,1.75,.1,1),las=1,mgp=c(1,0.8,0))
 

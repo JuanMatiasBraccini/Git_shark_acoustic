@@ -4,7 +4,8 @@
 
 
 #DATA SECTION
-setwd("C:/Matias/Analyses/Acoustic_tagging/Simulation evaluation")
+handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+setwd(handl_OneDrive("Analyses/Acoustic_tagging/Simulation evaluation"))
 
 #Fig1.A
 pdf.speed.Brown=as.matrix(read.csv(file="pdf.speed.Brown.csv"))

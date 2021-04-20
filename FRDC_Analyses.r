@@ -64,11 +64,12 @@ library(data.table)
 options(stringsAsFactors = FALSE)
 
 #source bubble plot functions
-source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Bubble.plot.R") 
-source("C:/Matias/Analyses/Acoustic_tagging/Git_shark_acoustic/Bubble.plot.detections.R")
+handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+source(handl_OneDrive("Analyses/SOURCE_SCRIPTS/Git_other/Bubble.plot.R")) 
+source(handl_OneDrive("Analyses/Acoustic_tagging/Git_shark_acoustic/Bubble.plot.detections.R"))
 
 
-source("C:/Matias/Analyses/SOURCE_SCRIPTS/Deviance.explained.R")
+source(handl_OneDrive("Analyses/SOURCE_SCRIPTS/Deviance.explained.R"))
 
 ###### DATA SECTION ############
 
@@ -77,18 +78,18 @@ source("C:/Matias/Analyses/SOURCE_SCRIPTS/Deviance.explained.R")
 #use.all="NO"   #set to "YES" if also anlysing white, tiger and grey nurse sharks
 #source("C:/Matias/Analyses/Acoustic_tagging/5.Source_acoustic_data.R")
 
-setwd("C:/Matias/Data/Tagging/Acoustic_tagging/Acoustic_tagging_data")
+setwd(handl_OneDrive("Data/Tagging/Acoustic_tagging/Acoustic_tagging_data"))
 Detections=fread("Detections.csv",data.table=FALSE)
 AATAMS.all=fread("AATAMS.all.csv",data.table=FALSE)
 SMN.all=fread("SMN.all.csv",data.table=FALSE)
 TAGS=read.csv("TAGS.csv",stringsAsFactors=F)
 #ACA
 
-PerthIs=read.table("C:/Matias/Data/Mapping/WAislandsPointsNew.txt", header=T)
+PerthIs=read.table(handl_OneDrive("Data/Mapping/WAislandsPointsNew.txt", header=T))
 Rottnest.Is=subset(PerthIs,ID%in%c("ROTT1"))
 Garden.Is=subset(PerthIs,ID%in%c("ROTT3"))
   
-setwd("C:/Matias/Analyses/Acoustic_tagging/FRDC")
+setwd(handl_OneDrive("Analyses/Acoustic_tagging/FRDC"))
 
 
 #Sharks data base for size of all tagged sharks
@@ -108,13 +109,13 @@ if(Source.FL.externally=="YES")  #if FL not extracted from SMN web
     DATA=subset(DATA,Species%in%c("BW","TK","GM","WH","CP")& !is.na(TagCode),select=c(Species,DATE,TagCode,FL,TL))
     DATA=subset(DATA,!(TagCode==29597 & as.character(DATE)=="2013-07-26"))  #remove duplication
   }
-  if(DAT==1) DATA=read.csv("C:/Matias/Analyses/Acoustic_tagging/DATA.csv")
+  if(DAT==1) DATA=read.csv(handl_OneDrive("Analyses/Acoustic_tagging/DATA.csv"))
   
   DATA$Project.rel='SMN'
   
   #Size and Release info from all South Australian sharks
   #note: update this file if new SA sharks are tagged
-  DATA.SA=read.csv("C:/Matias/Data/Tagging/Acoustic_tagging/Other researcher's tags/Charlie's tags.csv")
+  DATA.SA=read.csv(handl_OneDrive("Data/Tagging/Acoustic_tagging/Other researcher's tags/Charlie's tags.csv"))
   DATA.SA$DATE=as.POSIXlt(as.character(DATA.SA$ReleaseDate),format='%d/%m/%Y')
   DATA.SA$Project.rel='South.Australia'
   DATA.SA$FL=100*DATA.SA$FL
@@ -134,12 +135,12 @@ Condition=subset(Condition,!is.na(ATAG),select=c(ATAG,SPECIES,FL,CONDITION))
 
 
 #Shark zones
-JA_Northern_Shark=readOGR("C:/Matias/Data/Mapping/Shark_shape_files/JA_Northern_Shark.shp", layer="JA_Northern_Shark") 
-WA_Northern_Shark=readOGR("C:/Matias/Data/Mapping/Shark_shape_files/NorthCoastShark_s43.shp", layer="NorthCoastShark_s43") 
-WA_Northern_Shark_2=readOGR("C:/Matias/Data/Mapping/Shark_shape_files/NorthWestCoastShark_s43.shp", layer="NorthWestCoastShark_s43") 
-SDGDLL_zone1=readOGR("C:/Matias/Data/Mapping/Shark_shape_files/SDGDLL_zone1.shp", layer="SDGDLL_zone1") 
-SDGDLL_zone2=readOGR("C:/Matias/Data/Mapping/Shark_shape_files/SDGDLL_zone2.shp", layer="SDGDLL_zone2") 
-WCDGDLL=readOGR("C:/Matias/Data/Mapping/Shark_shape_files/WCDGDLL.shp", layer="WCDGDLL") 
+JA_Northern_Shark=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/JA_Northern_Shark.shp", layer="JA_Northern_Shark")) 
+WA_Northern_Shark=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/NorthCoastShark_s43.shp", layer="NorthCoastShark_s43")) 
+WA_Northern_Shark_2=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/NorthWestCoastShark_s43.shp", layer="NorthWestCoastShark_s43")) 
+SDGDLL_zone1=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/SDGDLL_zone1.shp", layer="SDGDLL_zone1")) 
+SDGDLL_zone2=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/SDGDLL_zone2.shp", layer="SDGDLL_zone2")) 
+WCDGDLL=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/WCDGDLL.shp", layer="WCDGDLL")) 
 
 
 #Reported recaptures
@@ -150,12 +151,12 @@ close(channel)
 
 
 #Bathymetry
-Bathymetry_120=read.table("C:/Matias/Data/Mapping/get_data112_120.cgi")
-Bathymetry_138=read.table("C:/Matias/Data/Mapping/get_data120.05_138.cgi")
+Bathymetry_120=read.table(handl_OneDrive("Data/Mapping/get_data112_120.cgi"))
+Bathymetry_138=read.table(handl_OneDrive("Data/Mapping/get_data120.05_138.cgi"))
 Bathymetry=rbind(Bathymetry_120,Bathymetry_138)
 rm(Bathymetry_138);rm(Bathymetry_120)
 
-Temp=read.csv("C:/Matias/Data/SST.nice.format.csv")
+Temp=read.csv(handl_OneDrive("Data/SST.nice.format.csv"))
 #Temp=read.csv("C:/Matias/Data/Reynolds SST/Coast_temperatures.csv")
 
 
@@ -275,7 +276,7 @@ Rep.Recap=rbind(Rep.Recap,Add.Jeff)
 
 Tab.rep.rec=table(as.character(Rep.Recap$SPECIES))
 
-setwd("C:/Matias/Analyses/Acoustic_tagging/FRDC/Outputs_movement")
+setwd(handl_OneDrive("Analyses/Acoustic_tagging/FRDC/Outputs_movement"))
 this=match(c("SPECIES","ATAG_NO","SEX","Rep.pos","Rep.date","RELEASE DATE","DATE_CAPTR","RELLATDECDEG",
             "RELLNGDECDEG","RECLATDECDEG","RECLNGDECDEG"),names(Rep.Recap))
 Re.Rec.Tab=Rep.Recap[order(Rep.Recap$SPECIES,Rep.Recap$ATAG_NO),this]
@@ -294,7 +295,7 @@ for(i in 1:length(Pop.din.sp))
              ifelse(Pop.din.sp[i]=='WH','Whiskery shark',
                     ifelse(Pop.din.sp[i]=='GM','Gummy shark',
                            ifelse(Pop.din.sp[i]=='TK','Sandbar shark',NA))))
-  write.csv(a,paste('C:/Matias/Analyses/Data_outs/',NmS,'/',NmS,"_Acous.Tag_Rep.Recap.csv",sep=""),row.names=F)
+  write.csv(a,paste(handl_OneDrive('Analyses/Data_outs/'),NmS,'/',NmS,"_Acous.Tag_Rep.Recap.csv",sep=""),row.names=F)
 }
 
 #Export as word table
@@ -715,8 +716,8 @@ DaveJ=subset(Detections,Species%in%c("Dusky","Thickskin") & Project.rel=="SMN",
         select=c(TagCode,TagCode.original,SerialNumber,Species,Sex,FL,ReleaseDate,ReleaseLatitude,
                  ReleaseLongitude,Latitude,Longitude,Depth,DateTime.local,
                  Date.local,Time.local))
-write.csv(DaveJ,"C:/Matias/Data/Tagging/Acoustic_tagging/Dave Jacoby/Data.csv",row.names=F)
-write.csv(Receivers,"C:/Matias/Data/Tagging/Acoustic_tagging/Dave Jacoby/Receivers.csv",row.names=F)
+write.csv(DaveJ,handl_OneDrive("Data/Tagging/Acoustic_tagging/Dave Jacoby/Data.csv"),row.names=F)
+write.csv(Receivers,handl_OneDrive("Data/Tagging/Acoustic_tagging/Dave Jacoby/Receivers.csv"),row.names=F)
 
 
 
@@ -1800,7 +1801,7 @@ if(Animate.Dusky=="YES")
                 annotate('text', x = 116,y=-19.5,label=paste(length(N.shk),"sharks detected in total"), col="white",size=4.5))
       }
     })
-  },movie.name="C:/Matias/Analyses/Acoustic_tagging/Dusky_migration/Animation_data_Trajectories.gif",interval=0.25,loop =1)})   
+  },movie.name=handl_OneDrive("Analyses/Acoustic_tagging/Dusky_migration/Animation_data_Trajectories.gif"),interval=0.25,loop =1)})   
 
 }
 
@@ -2178,7 +2179,7 @@ if (do_mov_rates=="here")
     Time.mon.grid=do.call(rbind,Time.mon.grid)  
     
     
-    source("C:/Matias/Analyses/SOURCE_SCRIPTS/Deviance.explained.R")
+    source(handl_OneDrive("Analyses/SOURCE_SCRIPTS/Deviance.explained.R"))
     move.rate.fn=function(dat,MOD,zns,set.non.adj.0)
     {
       #Put data in right format (add pseudo-0)
@@ -2478,7 +2479,7 @@ if (do_mov_rates=="here")
     
     
     #Plot management zones and receiver lines for TDGDLF
-    source("C:/Matias/Analyses/SOURCE_SCRIPTS/TDGLDF.zones.receivers.R")
+    source(handl_OneDrive("Analyses/SOURCE_SCRIPTS/TDGLDF.zones.receivers.R"))
     tiff(file="TDGDLF_zone_receiver.tiff",width = 2400, height = 2400,units = "px", res = 300, compression = "lzw")    
     fn.map.zones.receivers(a=112:129,PLATE=c(.01,.9,.075,.9),OZ.lat=c(-44.5,-11),OZ.long=c(113,155),
                            South.WA.lat=c(-36,-25), South.WA.long=c(112,129))
@@ -2545,7 +2546,7 @@ if (do_mov_rates=="here")
     agg.zone.month.year=merge(agg.zone.month.year,subset(Number.Stations.Line,select=c(zone,Rel.det.area)),by="zone",all.x=T)
     agg.zone.year=merge(agg.zone.year,subset(Number.Stations.Line,select=c(zone,Rel.det.area)),by="zone",all.x=T)
     
-    setwd("C:/Matias/Analyses/Acoustic_tagging/FRDC/Outputs_movement/Movement_rates/Simon")
+    setwd(handl_OneDrive("Analyses/Acoustic_tagging/FRDC/Outputs_movement/Movement_rates/Simon"))
     write.csv(Move.rate,"rawdata.csv",row.names=F)
     write.csv(agg.zone.year,"agg.zone.year.csv",row.names=F)
     
@@ -3426,7 +3427,7 @@ for(q in 1:length(Store.group))Store.group_ind.base[[q]]=fn.dat.for.ind.base.mdl
 
 
 #export
-setwd("C:/Matias/Analyses/Data_outs")
+setwd(handl_OneDrive("Analyses/Data_outs"))
 for(i in 1:length(Store.group))
 {
   #SS3 approach
@@ -3448,7 +3449,7 @@ for(i in 1:length(Store.group))
   #export data for mapping 
   if(names(Store.group)[i]%in%c("Gummy" ,"Whiskery"))
   {
-    HnDDl="C:/Matias/Analyses/Movement rate estimation/Joint.estim_ind.base.mod/Show Gummy and whiskery outputs/"
+    HnDDl=handl_OneDrive("Analyses/Movement rate estimation/Joint.estim_ind.base.mod/Show Gummy and whiskery outputs/")
     a=subset(Tagging.pop.dyn,Index%in%Store.group_ind.base[[i]]$Index,select=c(TagCode,
             Lat.rec, Long.rec,ReleaseLatitude,ReleaseLongitude,Latitude.prev,Longitude.prev))
     a$Latitude.prev=with(a,ifelse(is.na(Latitude.prev),ReleaseLatitude,Latitude.prev))
@@ -3560,7 +3561,7 @@ names(Time.adj.zn)=sps
   #Movement among non-adjacent zones
 for(s in 1:length(sps))Time.adj.zn[[s]]=fn.time.zone(subset(Tagging.pop.dyn,Species==sps[s]),ADJ="NO")
 
-tiff(file="C:/Matias/Analyses/Acoustic_tagging/FRDC/Outputs_movement/Move_among_non_adjacent_zones.tiff",
+tiff(file=handl_OneDrive("Analyses/Acoustic_tagging/FRDC/Outputs_movement/Move_among_non_adjacent_zones.tiff"),
      width = 2400, height = 2000,units = "px", res = 300,compression = "lzw")
 par(mfcol=c(3,1),mai=c(.5,.8,.25,.1),mgp=c(1,.7,0))
 fn.plt(cbind(Time.adj.zn[[1]][2],Time.adj.zn[[2]][2],Time.adj.zn[[3]][2],Time.adj.zn[[4]][2]),
@@ -3573,7 +3574,7 @@ dev.off()
 
 #Movement among adjacent zones
 for(s in 1:length(sps))Time.adj.zn[[s]]=fn.time.zone(subset(Tagging.pop.dyn,Species==sps[s]),ADJ="YES")
-tiff(file="C:/Matias/Analyses/Acoustic_tagging/FRDC/Outputs_movement/Move_among_adjacent_zones.tiff",
+tiff(file=handl_OneDrive("Analyses/Acoustic_tagging/FRDC/Outputs_movement/Move_among_adjacent_zones.tiff"),
      width = 2400, height = 2000,units = "px", res = 300,compression = "lzw")
 par(mfcol=c(3,1),mai=c(.5,.8,.25,.1),mgp=c(1,.7,0))
 fn.plt(cbind(Time.adj.zn[[1]][2],Time.adj.zn[[2]][2],Time.adj.zn[[3]][2],Time.adj.zn[[4]][2]),
@@ -3682,7 +3683,7 @@ fn.see=function(x,y,XLIM,YLIM)
   close.screen(all = TRUE)
 }
 
-setwd("C:/Matias/Analyses/Population dynamics/Acoustic_outputs")
+setwd(handl_OneDrive("Analyses/Acoustic_tagging/Acoustic_outputs_pop.dyn"))
 
 # tag=29599
 # tiff(file=paste("Sandbar shark.tag code.",tag,".tiff",sep=""),width = 2400, height = 2400,units = "px", res = 300,compression = "lzw")
@@ -3734,7 +3735,7 @@ for(i in 1:length(Store.group))
 
 
 #8. -- Home range (Kernel Density) for Ningaloo ---
-setwd("C:/Matias/Analyses/Acoustic_tagging/FRDC/Outputs_movement")
+setwd(handl_OneDrive("Analyses/Acoustic_tagging/FRDC/Outputs_movement"))
 
 #number of days detected for 4 species out of total number of days monitored
 fn.n.days.monitor=function(SPec,SPEC.nm,txt.CX)
@@ -4094,7 +4095,7 @@ function.timeline=function(shks,Spec,SPEC,FL_50,FL_50.male)
    mtext("Date",1,outer=T,line=-2,cex=2) 
 }
 
-setwd("C:/Matias/Analyses/Acoustic_tagging/FRDC")
+setwd(handl_OneDrive("Analyses/Acoustic_tagging/FRDC"))
 
 plot.seasonal.color.code.time.lime="NO"
 if(plot.seasonal.color.code.time.lime=="YES")
@@ -4787,7 +4788,7 @@ for (s in 1:length(Detections.species))
 #18.1 -- Behavioural polymorphism ---   
 
 BP_sp=c("Dusky","Thickskin")
-hndl.BP="C:/Matias/Analyses/Acoustic_tagging/FRDC/Outputs_movement/Behavioural_Polymorphism/"
+hndl.BP=handl_OneDrive("Analyses/Acoustic_tagging/FRDC/Outputs_movement/Behavioural_Polymorphism/")
 
 #18.1.1 Proportion of days monitored
 fn.n.days.monitor_BP=function(SPec,SPEC.nm,txt.CX)
@@ -5294,7 +5295,7 @@ rm(Detections.species_BP)
 
 #19. -- Dusky natal migration analysis ---
 
-setwd("C:/Matias/Analyses/Acoustic_tagging/FRDC/Outputs_movement/Natal_migration/Paper")
+setwd(handl_OneDrive("Analyses/Acoustic_tagging/FRDC/Outputs_movement/Natal_migration/Paper"))
 
 #export tagged duskies 
 write.csv(subset(TAGS,Species2=="Dusky" & Project.rel=="SMN",select=c(Sex2,ReleaseLength,DATE,
@@ -6564,7 +6565,7 @@ write.csv(dat.glm,"dat.glm.csv",row.names=F)
 x1=c(0,max(dat.glm$yday.rec))
 x2=c(0,max(dat.glm$week))
 x3=as.numeric(c(min(dat.glm$Date.local),max(dat.glm$Date.local)))
-pdf("C:/Matias/Analyses/Acoustic_tagging/FRDC/Outputs_movement/Natal_migration/Each_shark/plot.pdf")
+pdf(handl_OneDrive("Analyses/Acoustic_tagging/FRDC/Outputs_movement/Natal_migration/Each_shark/plot.pdf"))
 for(n in 1:length(Tags.d))
 {
   a=subset(dat.glm,TagCode==Tags.d[n],select=c(TagCode,Date.local,Year,Month,week,yday.rec,Sesn.rec,Array,N,Sex,FL))
@@ -6589,7 +6590,7 @@ dev.off()
 Do.other.approach="NO"
 if(Do.other.approach=="YES")
 {
-  source("C:/Matias/Analyses/Acoustic_tagging/Dusky_migration/Git_dusky_migration/Dusky_migration.R")  
+  source(handl_OneDrive("Analyses/Acoustic_tagging/Dusky_migration/Git_dusky_migration/Dusky_migration.R"))  
   
   #19.2.3 GLM approach not used
   
@@ -7108,7 +7109,7 @@ if(Do.other.approach=="YES")
   
 }
 
-setwd("C:/Matias/Analyses/Acoustic_tagging/FRDC")
+setwd(handl_OneDrive("Analyses/Acoustic_tagging/FRDC"))
 
 #19.3 Proportion of detections by month per array for dusky sharks
 
@@ -8504,7 +8505,7 @@ MEPS.paper=function(do.MEPS.outptus)
   PaZ=getwd()
   if(do.MEPS.outptus=="YES")
   {
-    setwd("C:/Matias/Analyses/Acoustic_tagging/FRDC/Outputs_movement/MEPS_paper")
+    setwd(handl_OneDrive("Analyses/Acoustic_tagging/FRDC/Outputs_movement/MEPS_paper"))
     
     #Table 1
     Tab1=Table1[,-ncol(Table1)]
@@ -9230,7 +9231,7 @@ FO.paper=function(do.FO.outputs)
 {
   if(do.FO.outputs=="YES")
   {
-    setwd("C:/Matias/Analyses/Acoustic_tagging/FRDC/Outputs_movement/FO_paper")
+    setwd(handl_OneDrive("Analyses/Acoustic_tagging/FRDC/Outputs_movement/FO_paper"))
     
     #Figure 1. Map
     #define coordinates of polygons

@@ -5,7 +5,7 @@
 
 library(chron) #for extracting time
 library(lubridate)
-
+handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
 setwd("C:/Users/myb/Desktop/AATAMS_donwloads")
 
 #note: keep an eye on timestamp format when processing new data!!!!
@@ -174,7 +174,7 @@ Data$ID=as.numeric(substring(as.character(Data$transmitter.ID), first=10, last =
 
 
 #Add tag information
-source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Source_acoustic_transmitters.R")  #Load tag ids. note: keep transmiters updated
+source(handl_OneDrive("Analyses/Acoustic_tagging/Git_shark_acoustic/Source_acoustic_transmitters.R"))  #Load tag ids. note: keep transmiters updated
 cool.tags=as.numeric(unique(TAGS$Code2))
 
 
@@ -256,7 +256,7 @@ Data$Species2=ifelse(Data$Species2=="OTN SENTINEL","SENTINEL",Data$Species2)
 
 
 #8. Export data
-setwd("C:/Matias/Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/AATAMS_downloads_processed")
+setwd(handl_OneDrive("Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/AATAMS_downloads_processed"))
 
 if(Current.batch=="Batch 21.09.2012") write.csv(Data,file="AATAMS.data.upto.21_09_2012.csv")
 if(Current.batch=="Batch 07.01.2014") write.csv(Data,file="AATAMS.data.22_09_2012.to.7.1.2014.csv")

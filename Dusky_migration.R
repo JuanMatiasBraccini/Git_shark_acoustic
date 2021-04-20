@@ -6,7 +6,8 @@
 
 
 #Read in data
-setwd("C:/Matias/Analyses/Acoustic_tagging/FRDC/Outputs_movement/Natal_migration/Paper")
+handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+setwd(handl_OneDrive("Analyses/Acoustic_tagging/FRDC/Outputs_movement/Natal_migration/Paper"))
 dat.glm=read.csv("dat.glm.csv")
 library(lme4)
 
@@ -24,7 +25,7 @@ CI.pol=function(X,Ylow,Yhigh,COL,BORDER)
   polygon(XX,YY,col=COL,border=BORDER)
 }
 fn.logis=function(dat,pmax,inflx,slop) pmax/(1+exp((dat-inflx)/slop))
-source("C:/Matias/Analyses/SOURCE_SCRIPTS/Deviance.explained.R")
+source(handl_OneDrive("Analyses/SOURCE_SCRIPTS/Deviance.explained.R"))
 fn.plt.pred.M=function(Preds,CL.lin,CL.back)
 {
   Fit=Preds$fit
@@ -47,7 +48,7 @@ fn.plt.pred.M.spline.only=function(Preds,CL.lin)
   lines(smooth.fem$x,smooth.fem$y,lwd=3,col=CL.lin,lty=2)
 }
 
-source("C:/Matias/Analyses/SOURCE_SCRIPTS/MS.Office.outputs.R")
+source(handl_OneDrive("Analyses/SOURCE_SCRIPTS/MS.Office.outputs.R"))
 exp.tabl=function(Tbl,Doc.nm)
 {
   fn.word.table(WD=getwd(),TBL=Tbl,Doc.nm=Doc.nm,caption=NA,paragph=NA,

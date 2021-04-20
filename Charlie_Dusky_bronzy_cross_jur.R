@@ -24,7 +24,8 @@ library(data.table)
 options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE)
 
 #1. Data Section---------------------------------------------------------
-setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie\\Data')
+handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+setwd(handl_OneDrive('Analyses/Acoustic_tagging/For Charlie/Data'))
 #Yuri's repository https://www.dropbox.com/sh/v1rhv50ew4po9sa/AACuAb2gQvR99urBwJ8nzN95a?dl=0
 Dat= fread('Total_detections_2020_12_14.csv',data.table=FALSE) 
 #Dat=read.csv('All detections_2018 01.csv')  #missing: need updated version, which should include what's in For.Charlie.csv
@@ -33,14 +34,14 @@ Blank_LatLong=read.csv('Blank_LatLong.csv')
 
 
 #SMN individual tag download Nov 2019    #missing: probably don need this as For.Charlie.csv has release info
-setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie\\Data\\SMN_download_Nov_19')
+setwd(handl_OneDrive('Analyses\\Acoustic_tagging\\For Charlie\\Data\\SMN_download_Nov_19'))
 file_list  <- list.files()
 DATA.SMN=do.call(rbind,lapply(file_list,read.csv))
-setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie')
+setwd(handl_OneDrive('Analyses\\Acoustic_tagging\\For Charlie'))
 
 
 #bring in conventional tagging data
-source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Source_conventional_data.R")
+source(handl_OneDrive("Analyses/SOURCE_SCRIPTS/Git_other/Source_conventional_data.R"))
 
 
 #2. Parameters Section---------------------------------------------------
@@ -218,7 +219,7 @@ A$WA=B[,2]
 
 
 # Report table of tagcodes by species and state----------------------------------------------------------------
-setwd('C:\\Matias\\Analyses\\Acoustic_tagging\\For Charlie\\Results')
+setwd(handl_OneDrive('Analyses\\Acoustic_tagging\\For Charlie\\Results'))
 Tab1= group_by(Dat, TagCode, Species,Organisation,State) %>%
   summarise(sum = sum(N)) %>%
   as.data.frame()

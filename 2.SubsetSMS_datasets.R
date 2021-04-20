@@ -7,6 +7,8 @@ library(chron) #for extracting time
 library(data.table)
 library(dplyr)
 library(stringr)
+handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+
 
 
 # Data section ------------------------------------------------------------
@@ -69,9 +71,9 @@ DATA=left_join(DetectionsComplete,TagsCompleteReport,by=c('Transmitter','Species
 
 
 #Export data
-setwd("C:/Matias/Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/SMS_donwloads_processed")
+setwd(handl_OneDrive("Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/SMS_donwloads_processed"))
 write.csv(DATA,file=paste(paste(unique(DATA$Species),collapse='_'),".",Sys.Date(),".csv",sep=''))
 
 
-setwd("C:/Matias/Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/SMS_tags")
+setwd(handl_OneDrive("Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/SMS_tags"))
 write.csv(ALL.tags,file=paste('ALL.tags',".",Sys.Date(),".csv",sep=''))

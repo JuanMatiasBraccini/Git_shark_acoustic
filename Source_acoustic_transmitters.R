@@ -1,8 +1,9 @@
 #SOURCE ALL ACOUSTIC TRANSMITTES RELEVANT TO STUDY
 library(lubridate)
-WA.Fisheries=read.csv(file="C:/Matias/Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/TaglistReport.1.11.2018.csv",stringsAsFactors =F)
-South.Africa=read.csv(file="C:/Matias/Data/Tagging/Acoustic_tagging/Other researcher's tags/ATAP_South african tags_Nov2013.csv",stringsAsFactors =F)
-South.Oz=read.csv(file="C:/Matias/Data/Tagging/Acoustic_tagging/Other researcher's tags/Charlie's tags.csv",stringsAsFactors =F)
+handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+WA.Fisheries=read.csv(file=handl_OneDrive("Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/TaglistReport.1.11.2018.csv"),stringsAsFactors =F)
+South.Africa=read.csv(file=handl_OneDrive("Data/Tagging/Acoustic_tagging/Other researcher's tags/ATAP_South african tags_Nov2013.csv"),stringsAsFactors =F)
+South.Oz=read.csv(file=handl_OneDrive("Data/Tagging/Acoustic_tagging/Other researcher's tags/Charlie's tags.csv"),stringsAsFactors =F)
 
 South.Africa=South.Africa[,match(names(WA.Fisheries),names(South.Africa))]
 South.Oz=South.Oz[,match(names(WA.Fisheries),names(South.Oz))]

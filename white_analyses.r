@@ -28,7 +28,8 @@
 #------DATA SECTION------
 
 #source data
-setwd("C:/Matias/Data/Tagging/Acoustic_tagging/Acoustic_tagging_data")
+handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+setwd(handl_OneDrive("Data/Tagging/Acoustic_tagging/Acoustic_tagging_data"))
 Detections=read.csv("Detections.csv",stringsAsFactors=F)
 AATAMS.all=read.csv("AATAMS.all.csv",stringsAsFactors=F)
 SMN.all=read.csv("SMN.all.csv",stringsAsFactors=F)
@@ -346,8 +347,8 @@ for(i in 1:4)
     polygon(x=S.WA.long,y=S.WA.lat,lwd=2)
     polygon(x=SA.long,y=SA.lat,lwd=2)
     text(133,-25,("Australia"),col="black", cex=2)
-    mtext("Latitude (ºS)",side=2,line=0,las=3,cex=2)
-    mtext("Longitude (ºE)",side=1,line=0,cex=2)
+    mtext("Latitude (?S)",side=2,line=0,las=3,cex=2)
+    mtext("Longitude (?E)",side=1,line=0,cex=2)
     text(115.98,-22.6,("A"),col="black", cex=1.75)
     text(120.6,-31.1,("B"),col="black", cex=1.75)
     text(136.9,-31.4,("C"),col="black", cex=1.75)
@@ -1019,8 +1020,8 @@ box(lwd=2)
 contour(xbat, ybat, reshaped[,2:ncol(reshaped)],ylim=plotlat[[i]],xlim=plotlong[[i]], zlim=c(-1,-300),
         nlevels = 3,labcex=1.25,lty = c(1,2,3),col=c("gray20","gray20","gray20","transparent"),add=T)
 text(115.80,-31.96656,"Perth",cex=1.75)
-mtext("Latitude (ºS)",side=2,line=2,las=3,cex=2)
-mtext("Longitude (ºE)",side=1,line=1.75,cex=2)
+mtext("Latitude (?S)",side=2,line=2,las=3,cex=2)
+mtext("Longitude (?E)",side=1,line=1.75,cex=2)
 legend('bottomright',c("VR2W","VR4G"),pch=c(21,24),bty="n",
        col=1,pt.bg=c("black","gray80"),text.col="black",cex=1.25)
 

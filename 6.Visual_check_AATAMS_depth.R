@@ -1,8 +1,9 @@
 #Manually get AATMAS depth
+handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
 
 
-Bathymetry_120=read.table("C:/Matias/Data/Mapping/get_data112_120.cgi")
-Bathymetry_138=read.table("C:/Matias/Data/Mapping/get_data120.05_138.cgi")
+Bathymetry_120=read.table(handl_OneDrive("Data/Mapping/get_data112_120.cgi"))
+Bathymetry_138=read.table(handl_OneDrive("Data/Mapping/get_data120.05_138.cgi"))
 Bathymetry=rbind(Bathymetry_120,Bathymetry_138)
 Bathymetry=Bathymetry[order(Bathymetry$V1,Bathymetry$V2),]
 xbat=sort(unique(Bathymetry$V1))
@@ -12,7 +13,7 @@ ybat=sort(unique(Bathymetry$V2))
 
 
 
-setwd("C:/Matias/Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/AATAMS_receiver_location")
+setwd(handl_OneDrive("Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/AATAMS_receiver_location"))
 
 AATAMS=read.csv("AATAMS_receivers.manipulated_25_09_2012.csv")
 

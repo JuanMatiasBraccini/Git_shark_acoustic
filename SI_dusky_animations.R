@@ -13,8 +13,8 @@ library(ggplot2)
 library(ggmap)
 require(animation) # NB, must install ImageMagick
 
-
-setwd("C:\\Matias\\Analyses\\Acoustic_tagging\\Dusky_migration")
+handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+setwd(handl_OneDrive("Analyses\\Acoustic_tagging\\Dusky_migration"))
 
 #---INPUT PARAMETERS----
 

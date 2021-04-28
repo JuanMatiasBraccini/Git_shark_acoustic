@@ -5,8 +5,7 @@
 
 library(chron) #for extracting time
 library(lubridate)
-handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
-setwd("C:/Users/myb/Desktop/AATAMS_donwloads")
+if(!exists('handl_OneDrive')) source('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/SOURCE_SCRIPTS/Git_other/handl_OneDrive.R')setwd("C:/Users/myb/Desktop/AATAMS_donwloads")
 
 #note: keep an eye on timestamp format when processing new data!!!!
 

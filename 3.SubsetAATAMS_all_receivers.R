@@ -1,7 +1,7 @@
 #SCRIPT FOR MANIPULATING AATAMS RECEIVERS INFOR
 
 #1. lOAD DATA
-handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+if(!exists('handl_OneDrive')) source('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/SOURCE_SCRIPTS/Git_other/handl_OneDrive.R')
 
 setwd(handl_OneDrive("Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/AATAMS_receiver_location"))
 #setwd("M:/Fisheries Research/FinFish/Shark/Braccini/Acoustic_tagging_data/AATAMS_receiver_location")

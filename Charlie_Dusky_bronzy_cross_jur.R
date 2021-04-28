@@ -24,7 +24,8 @@ library(data.table)
 options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE)
 
 #1. Data Section---------------------------------------------------------
-handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+if(!exists('handl_OneDrive')) source('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/SOURCE_SCRIPTS/Git_other/handl_OneDrive.R')
+
 setwd(handl_OneDrive('Analyses/Acoustic_tagging/For Charlie/Data'))
 #Yuri's repository https://www.dropbox.com/sh/v1rhv50ew4po9sa/AACuAb2gQvR99urBwJ8nzN95a?dl=0
 Dat= fread('Total_detections_2020_12_14.csv',data.table=FALSE) 

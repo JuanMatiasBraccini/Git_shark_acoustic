@@ -1,6 +1,7 @@
 #SOURCE ALL ACOUSTIC TRANSMITTES RELEVANT TO STUDY
 library(lubridate)
-handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+if(!exists('handl_OneDrive')) source('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/SOURCE_SCRIPTS/Git_other/handl_OneDrive.R')
+
 WA.Fisheries=read.csv(file=handl_OneDrive("Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/TaglistReport.1.11.2018.csv"),stringsAsFactors =F)
 South.Africa=read.csv(file=handl_OneDrive("Data/Tagging/Acoustic_tagging/Other researcher's tags/ATAP_South african tags_Nov2013.csv"),stringsAsFactors =F)
 South.Oz=read.csv(file=handl_OneDrive("Data/Tagging/Acoustic_tagging/Other researcher's tags/Charlie's tags.csv"),stringsAsFactors =F)

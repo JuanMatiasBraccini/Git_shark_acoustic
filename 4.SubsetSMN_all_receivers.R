@@ -1,7 +1,8 @@
 #SCRIPT FOR MANIPULATING SMN RECEIVERS INFOR
 
 #1. lOAD DATA
-handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+if(!exists('handl_OneDrive')) source('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/SOURCE_SCRIPTS/Git_other/handl_OneDrive.R')
+
 setwd(handl_OneDrive("Data/Tagging/Acoustic_tagging/Acoustic_tagging_data/SMN_receiver_location"))
 SMN=read.csv(file="ReceiverStationDetailsReport.27_07_2015.csv")
 #SMN=read.csv(file="ReceiverStationDetailsReport.10_04_2015.csv")

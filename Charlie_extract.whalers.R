@@ -5,7 +5,8 @@ library(dplyr)
 send.only.shared=FALSE
 send.all=TRUE
 UTC.WA=8
-handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+if(!exists('handl_OneDrive')) source('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/SOURCE_SCRIPTS/Git_other/handl_OneDrive.R')
+
 setwd(handl_OneDrive("Data/Tagging/Acoustic_tagging/Acoustic_tagging_data"))
 Detections=fread("Detections.csv",data.table=FALSE)
 

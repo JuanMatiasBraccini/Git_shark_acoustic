@@ -84,9 +84,9 @@ Detections=fread("Detections.csv",data.table=FALSE)
 AATAMS.all=fread("AATAMS.all.csv",data.table=FALSE)
 SMN.all=fread("SMN.all.csv",data.table=FALSE)
 TAGS=read.csv("TAGS.csv",stringsAsFactors=F)
-#ACA
 
-PerthIs=read.table(handl_OneDrive("Data/Mapping/WAislandsPointsNew.txt", header=T))
+
+PerthIs=read.table(handl_OneDrive("Data/Mapping/WAislandsPointsNew.txt"), header=T)
 Rottnest.Is=subset(PerthIs,ID%in%c("ROTT1"))
 Garden.Is=subset(PerthIs,ID%in%c("ROTT3"))
   
@@ -127,7 +127,7 @@ if(Source.FL.externally=="YES")  #if FL not extracted from SMN web
 }
 
 #Release condition
-channel <- odbcConnectAccess2007("U:/Shark/Sharks.mdb")   #use for 64 bit
+channel <- odbcConnectAccess2007("U:/Shark/Sharks v20200323.mdb")   #use for 64 bit
 #channel <- odbcConnectAccess("M:/Fisheries Research/Production Databases/Shark/Sharks.mdb")      #32 bit
 Condition=sqlFetch(channel, "Tag data", colnames = F)   
 close(channel)
@@ -136,12 +136,12 @@ Condition=subset(Condition,!is.na(ATAG),select=c(ATAG,SPECIES,FL,CONDITION))
 
 
 #Shark zones
-JA_Northern_Shark=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/JA_Northern_Shark.shp", layer="JA_Northern_Shark")) 
-WA_Northern_Shark=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/NorthCoastShark_s43.shp", layer="NorthCoastShark_s43")) 
-WA_Northern_Shark_2=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/NorthWestCoastShark_s43.shp", layer="NorthWestCoastShark_s43")) 
-SDGDLL_zone1=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/SDGDLL_zone1.shp", layer="SDGDLL_zone1")) 
-SDGDLL_zone2=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/SDGDLL_zone2.shp", layer="SDGDLL_zone2")) 
-WCDGDLL=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/WCDGDLL.shp", layer="WCDGDLL")) 
+JA_Northern_Shark=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/JA_Northern_Shark.shp"), layer="JA_Northern_Shark") 
+WA_Northern_Shark=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/NorthCoastShark_s43.shp"), layer="NorthCoastShark_s43") 
+WA_Northern_Shark_2=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/NorthWestCoastShark_s43.shp"), layer="NorthWestCoastShark_s43") 
+SDGDLL_zone1=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/SDGDLL_zone1.shp"), layer="SDGDLL_zone1") 
+SDGDLL_zone2=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/SDGDLL_zone2.shp"), layer="SDGDLL_zone2") 
+WCDGDLL=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/WCDGDLL.shp"), layer="WCDGDLL") 
 
 
 #Reported recaptures
@@ -157,7 +157,7 @@ Bathymetry_138=read.table(handl_OneDrive("Data/Mapping/get_data120.05_138.cgi"))
 Bathymetry=rbind(Bathymetry_120,Bathymetry_138)
 rm(Bathymetry_138);rm(Bathymetry_120)
 
-Temp=read.csv(handl_OneDrive("Data/SST.nice.format.csv"))
+Temp=read.csv(handl_OneDrive("Data/Oceanography/SST.csv"))
 #Temp=read.csv("C:/Matias/Data/Reynolds SST/Coast_temperatures.csv")
 
 
@@ -3185,8 +3185,7 @@ dev.off()
 
 
 
-#7. -- Data set for pop dyn modelling ---
-
+# Data set for pop dyn modelling-------------------------------------------------------------------------
 Tagging.pop.dyn=Detections[,-match(c("SerialNumber","Time.local",
               "Station","Area","Area.release","Array","SerialNumber.prev"),names(Detections))]
 #Tagging.pop.dyn=subset(Detections, Dist.moved.conseq.det>0 | Dist.moved.rel.det>0 )
@@ -3388,6 +3387,7 @@ Tagging.pop.dyn$Index=1:nrow(Tagging.pop.dyn)
 fn.dat.for.ind.base.mdl=function(dat,n.min.days)    
 {
   Tgs=unique(dat$TagCode)
+  Tgs=Tgs[!is.na(Tgs)]
   dummy=vector('list',length(Tgs))
   for(t in 1:length(Tgs))
   {
@@ -3426,7 +3426,7 @@ names(Store.group_ind.base)=Pop.din.sp
 for(q in 1:length(Store.group))Store.group_ind.base[[q]]=fn.dat.for.ind.base.mdl(subset(Tagging.pop.dyn,Species==Pop.din.sp[q]),
                             n.min.days=30)
 
-
+#ACA
 #export
 setwd(handl_OneDrive("Analyses/Data_outs"))
 for(i in 1:length(Store.group))
@@ -3460,6 +3460,10 @@ for(i in 1:length(Store.group))
     
   }
 }
+
+
+# Continue code-------------------------------------------------------------------------
+
 
 #explore time for moving to adjancent and non-adjacent zones
 fn.time.zone=function(dat,ADJ)
